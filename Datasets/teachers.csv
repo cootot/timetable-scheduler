@@ -1,0 +1,87 @@
+teacher_id,teacher_name,email,department,max_hours_per_week
+T001,Aarthi R,t001@mail.com,CSE,16
+T002,Abirami K,t002@mail.com,CSE,16
+T003,Anantha Narayanan V,t003@mail.com,CSE,18
+T004,Anbazhagan M,t004@mail.com,CSE,17
+T005,Anisha Radhakrishnan,t005@mail.com,CSE,15
+T006,Anupa Vijay,t006@mail.com,CSE,15
+T007,Archana Devi R,t007@mail.com,CSE,15
+T008,Archana R,t008@mail.com,CSE,17
+T009,Arunkumar C,t009@mail.com,CSE,15
+T010,Aswathi T,t010@mail.com,CSE,17
+T011,Bagavathi Sivakumar P,t011@mail.com,CSE,16
+T012,Bagyammal T,t012@mail.com,CSE,18
+T013,Baskar A,t013@mail.com,CSE,15
+T014,Bharathi D,t014@mail.com,CSE,17
+T015,Bindu K R,t015@mail.com,CSE,16
+T016,C.Shunmuga Velayutham,t016@mail.com,CSE,17
+T017,Dayanand V,t017@mail.com,CSE,16
+T018,Deepika T,t018@mail.com,CSE,15
+T019,Dhanya M Dhanalakshmy,t019@mail.com,CSE,17
+T020,Dhanya N M,t020@mail.com,CSE,15
+T021,Divya M,t021@mail.com,CSE,17
+T022,C.Bagavathi,t022@mail.com,CSE,18
+T023,Ganesh Neelakanta Iyer,t023@mail.com,CSE,16
+T024,KARTHI R,t024@mail.com,CSE,15
+T025,Krishan Kumar,t025@mail.com,CSE,18
+T026,PRIYANKA KUMAR,t026@mail.com,CSE,17
+T027,SABARINATH SUBRAMANIAM,t027@mail.com,CSE,16
+T028,Gangadharan K,t028@mail.com,CSE,15
+T029,Gayathri V,t029@mail.com,CSE,15
+T030,Geethu Mohan,t030@mail.com,CSE,16
+T031,Govindarajan J,t031@mail.com,CSE,17
+T032,Harini N,t032@mail.com,CSE,16
+T033,Hema P Menon,t033@mail.com,CSE,17
+T034,Jevitha K P,t034@mail.com,CSE,16
+T035,Jeyakumar G,t035@mail.com,CSE,18
+T036,Kamalaveni V,t036@mail.com,CSE,15
+T037,Lalithamani N,t037@mail.com,CSE,15
+T038,Latha Parameswaran,t038@mail.com,CSE,17
+T039,Malathi P,t039@mail.com,CSE,18
+T040,Manjusha R,t040@mail.com,CSE,18
+T041,Manu Madhavan,t041@mail.com,CSE,17
+T042,Venkadeshan R,t042@mail.com,CSE,17
+T043,Lavanya G,t043@mail.com,CSE,17
+T044,Nalinadevi K,t044@mail.com,CSE,16
+T045,Neethu MR,t045@mail.com,CSE,17
+T046,Padmavathi S,t046@mail.com,CSE,16
+T047,Parambalath Narendra Kumar,t047@mail.com,CSE,17
+T048,Prakash P,t048@mail.com,CSE,16
+T049,Prashant R Nair,t049@mail.com,CSE,15
+T050,Prathilothamai M,t050@mail.com,CSE,15
+T051,Radhika G,t051@mail.com,CSE,15
+T052,Radhika N,t052@mail.com,CSE,16
+T053,Raghesh Krishnan K,t053@mail.com,CSE,18
+T054,Rajathilagam B,t054@mail.com,CSE,17
+T055,Ramya GR,t055@mail.com,CSE,18
+T056,Ramya U M,t056@mail.com,CSE,17
+T057,Rimjhim Padam Singh,t057@mail.com,CSE,15
+T058,Ritwik M,t058@mail.com,CSE,15
+T059,Sabarish BA,t059@mail.com,CSE,18
+T060,Saravanan S,t060@mail.com,CSE,16
+T061,Sathiya R R,t061@mail.com,CSE,16
+T062,Sathya S,t062@mail.com,CSE,15
+T063,Selvi C,t063@mail.com,CSE,18
+T064,Senthil Kumar T,t064@mail.com,CSE,16
+T065,Senthilkumar M,t065@mail.com,CSE,15
+T066,Shanmuga Priya S,t066@mail.com,CSE,17
+T067,Shivapratap Gopakumar,t067@mail.com,CSE,18
+T068,Shriram K V,t068@mail.com,CSE,17
+T069,Shyamala C K,t069@mail.com,CSE,18
+T070,Sikha O K,t070@mail.com,CSE,18
+T071,Sini Raj P,t071@mail.com,CSE,17
+T072,Siva Ratna Kumari Narisetti,t072@mail.com,CSE,17
+T073,Souparnika Sreedhar,t073@mail.com,CSE,18
+T074,Subathra P,t074@mail.com,CSE,15
+T075,Suchithra M,t075@mail.com,CSE,17
+T076,Suganya R,t076@mail.com,CSE,17
+T077,Sujee R,t077@mail.com,CSE,17
+T078,Sumesh A K,t078@mail.com,CSE,17
+T079,Swapna T R,t079@mail.com,CSE,17
+T080,Thangavelu S,t080@mail.com,CSE,18
+T081,Uma J,t081@mail.com,CSE,15
+T082,Vamsee Krishna Kiran M,t082@mail.com,CSE,16
+T083,Venkataraman D,t083@mail.com,CSE,16
+T084,Vidhya Balasubramaniam,t084@mail.com,CSE,18
+T085,Vidhya S,t085@mail.com,CSE,16
+T086,Vijaya Kumar Sundar,t086@mail.com,CSE,17
