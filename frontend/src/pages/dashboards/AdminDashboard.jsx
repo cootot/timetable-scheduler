@@ -1,14 +1,29 @@
 /**
- * Admin Dashboard
+ * Admin Dashboard Component
+ * =========================
  * 
- * Overview for System Administrators
+ * Provides a high-level overview of the entire system for Administrators.
+ * Includes aggregate statistics (total teachers, courses, etc.) and quick 
+ * links to management sections. 
+ * Also contains the critical "End Semester Rollover" functionality.
+ * 
+ * Author: Frontend Team (Bhuvanesh, Akshitha)
+ * Sprint: 1
  */
 
+// Import React hooks and Router components
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+
+// Import centralized API service functions to talk to the Django backend
 import { scheduleAPI, teacherAPI, courseAPI, roomAPI, sectionAPI, systemAPI } from '../../services/api';
 
 function AdminDashboard() {
+    // ---------------------------------------------------------
+    // STATE MANAGEMENT
+    // ---------------------------------------------------------
+    
+    // State to hold the numerical counts for the top overview cards
     const [stats, setStats] = useState({
         teachers: 0,
         courses: 0,
@@ -16,17 +31,30 @@ function AdminDashboard() {
         sections: 0,
         schedules: 0,
     });
+    
+    // Loading state for the initial data fetch
     const [loading, setLoading] = useState(true);
+    
+    // State variables managing the dangerous "Reset Semester" modal
     const [showResetModal, setShowResetModal] = useState(false);
-    const [confirmText, setConfirmText] = useState('');
-    const [resetting, setResetting] = useState(false);
+    const [confirmText, setConfirmText] = useState('');     // User must type "CONFIRM"
+    const [resetting, setResetting] = useState(false);      // Network loading state for the reset action
 
+    // ---------------------------------------------------------
+    // EFFECTS & DATA FETCHING
+    // ---------------------------------------------------------
+
+    // useEffect is triggered once when the component first mounts (empty dependency array [])
     useEffect(() => {
         loadStats();
     }, []);
 
+    /**
+     * Fetches all necessary counting statistics concurrently.
+     */
     const loadStats = async () => {
         try {
+            // Promise.all fires all 5 network requests simultaneously to save time
             const [teachers, courses, rooms, sections, schedules] = await Promise.all([
                 teacherAPI.getAll(),
                 courseAPI.getAll(),
@@ -35,6 +63,8 @@ function AdminDashboard() {
                 scheduleAPI.getAll(),
             ]);
 
+            // Update the state with the lengths of the returned arrays.
+            // It safely checks for .results (if paginated) or .data (if flat array)
             setStats({
                 teachers: teachers.data.results?.length || teachers.data.length || 0,
                 courses: courses.data.results?.length || courses.data.length || 0,
@@ -45,23 +75,40 @@ function AdminDashboard() {
         } catch (error) {
             console.error('Error loading stats:', error);
         } finally {
+            // Turn off the loading spinner whether the request succeeds or fails
             setLoading(false);
         }
     };
 
+    // If still fetching initial data, show a full-page spinner
     if (loading) return <div className="loading-spinner">Loading dashboard...</div>;
 
+    // ---------------------------------------------------------
+    // EVENT HANDLERS
+    // ---------------------------------------------------------
 
+    /**
+     * Executes the critical End Semester Rollover action.
+     * Wipes schedules and assignments but leaves master data intact.
+     */
     const handleResetSemester = async () => {
+        // Double-check the confirmation text input
         if (confirmText !== 'CONFIRM') return;
 
         setResetting(true);
         try {
+            // Send the request to the Django backend
             await systemAPI.resetSemester({ confirmation: 'CONFIRM' });
+            
+            // Provide feedback via native browser alert
             alert('Semester reset successful! All schedules and mappings have been cleared.');
+            
+            // Clean up the modal state
             setShowResetModal(false);
             setConfirmText('');
-            loadStats(); // Refresh stats
+            
+            // Refresh the dashboard numbers (schedules should drop to 0)
+            loadStats(); 
         } catch (error) {
             console.error('Reset failed:', error);
             alert('Failed to reset semester: ' + (error.response?.data?.error || error.message));
@@ -70,13 +117,21 @@ function AdminDashboard() {
         }
     };
 
+    // ---------------------------------------------------------
+    // RENDER UI
+    // ---------------------------------------------------------
     return (
         <div className="admin-dashboard fade-in">
+            {/* Page Title */}
             <div className="page-header fade-in">
                 <h1 className="page-title">System Admin Dashboard</h1>
                 <p className="page-description">Manage system health, data, and schedules.</p>
             </div>
 
+            {/* 
+                Top row of data cards showing metrics. 
+                Values dynamically loaded from the `stats` state object.
+            */}
             <div className="stats-grid fade-in">
                 <div className="stat-card">
                     <div className="stat-label">Total Teachers</div>
@@ -100,6 +155,9 @@ function AdminDashboard() {
                 </div>
             </div>
 
+            {/* 
+                Grid of quick links navigating to other administrative pages.
+            */}
             <div className="actions-section">
                 <h2 className="actions-header">Quick Actions</h2>
                 <div className="actions-grid">
@@ -130,8 +188,9 @@ function AdminDashboard() {
                 </div>
             </div>
 
-
-            {/* System Administration Section */}
+            {/* 
+                System Administration Section (Dangerous Actions)
+            */}
             <div className="section-header" style={{ marginTop: '3rem', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>System Administration</h2>
             </div>
@@ -144,6 +203,7 @@ function AdminDashboard() {
                             Archive current semester data and reset schedules.
                         </p>
                     </div>
+                    {/* Hitting this button only OPENS the modal, it doesn't run the API call yet */}
                     <button
                         onClick={() => setShowResetModal(true)}
                         className="btn btn-danger"
@@ -153,7 +213,10 @@ function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Reset Modal */}
+            {/* 
+                Confirmation Modal
+                Only rendered natively inside the DOM when showResetModal is true.
+            */}
             {showResetModal && (
                 <div className="modal-overlay">
                     <div className="modal-content" style={{ maxWidth: '400px' }}>
@@ -176,6 +239,7 @@ function AdminDashboard() {
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500', fontSize: '0.85rem' }}>
                                     Type <strong>CONFIRM</strong> to proceed:
                                 </label>
+                                {/* Text input for safety validation */}
                                 <input
                                     type="text"
                                     className="modal-input"
@@ -197,6 +261,7 @@ function AdminDashboard() {
                             >
                                 Cancel
                             </button>
+                            {/* Execute Request Button. Disabled until text matches precisely. */}
                             <button
                                 onClick={handleResetSemester}
                                 className="btn btn-danger"
@@ -211,7 +276,6 @@ function AdminDashboard() {
             )}
         </div>
     );
-
 }
 
 export default AdminDashboard;

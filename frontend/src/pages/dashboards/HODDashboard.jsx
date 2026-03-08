@@ -1,45 +1,76 @@
 /**
- * HOD Dashboard
+ * HOD (Head of Department) Dashboard Component
+ * ============================================
  * 
- * Overview for Heads of Department
+ * Provides an overview tailored specifically for Department Heads.
+ * They don't need to see the entire college's data; they only need to see 
+ * metrics (teachers, sections) related to their specific department.
+ * 
+ * Author: Frontend Team (Bhuvanesh, Akshitha)
+ * Sprint: 1
  */
 
+// Import React hooks and Router components
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+
+// Import global Auth Context to identify which department this user belongs to
 import { useAuth } from '../../context/AuthContext';
+
+// Import specific API endpoints allowed for HODs
 import { teacherAPI, sectionAPI } from '../../services/api';
 
 function HODDashboard() {
-    const { user } = useAuth();
+    // ---------------------------------------------------------
+    // STATE & CONTEXT
+    // ---------------------------------------------------------
+    const { user } = useAuth(); // Contains `user.department` (e.g., 'CSE')
+
+    // Local state for numeric overview metrics
     const [stats, setStats] = useState({
         deptTeachers: 0,
         deptCourses: 0,
         deptSections: 0,
         pendingApprovals: 0,
     });
+    
+    // Loading flag
     const [loading, setLoading] = useState(true);
 
+    // ---------------------------------------------------------
+    // DATA FETCHING
+    // ---------------------------------------------------------
+    // The dependency array includes `user`, so this effect reruns if the user changes.
     useEffect(() => {
         loadDeptStats();
     }, [user]);
 
+    /**
+     * Loads aggregated counts specifically filtered by the HOD's department.
+     */
     const loadDeptStats = async () => {
+        // Yield early if the user object hasn't loaded a department yet
         if (!user?.department) return;
 
         try {
+            // Fetch teachers and sections concurrently
             const [teachers, sections] = await Promise.all([
-                teacherAPI.byDepartment(user.department),
-                sectionAPI.getAll(),
+                teacherAPI.byDepartment(user.department), // Requires specialized backend endpoint
+                sectionAPI.getAll(),                      // Fetches all, filters locally
             ]);
 
+            // Safely extract the data arrays regardless of pagination settings
             const sectionData = sections.data.results || sections.data || [];
+            
+            // Client-side filtering: Only keep sections matching this HOD's department
             const deptSections = sectionData.filter(s => s.department === user.department);
 
+            // Update the state with the calculated lengths
             setStats({
                 deptTeachers: teachers.data.results?.length || teachers.data.length || 0,
-                deptCourses: 0, // Placeholder, would need course-dept link
+                deptCourses: 0, // Placeholder, would need a specialized department-course endpoint
                 deptSections: deptSections.length,
-                pendingApprovals: 2, // Mock data for "Pending Schedule Approvals"
+                pendingApprovals: 2, // Mock data indicating pending HOD review tasks
             });
         } catch (error) {
             console.error('Error loading HOD stats:', error);
@@ -48,15 +79,21 @@ function HODDashboard() {
         }
     };
 
+    // Show a loading screen while resolving the promises
     if (loading) return <div className="loading-spinner">Loading department dashboard...</div>;
 
+    // ---------------------------------------------------------
+    // RENDER UI
+    // ---------------------------------------------------------
     return (
         <div className="fade-in">
+            {/* Header dynamically displays the user's department name */}
             <div className="page-header">
                 <h1 className="page-title">Head of Department: {user.department}</h1>
                 <p className="page-description">Oversee departmental academic planning and schedules.</p>
             </div>
 
+            {/* Quick overview metric cards */}
             <div className="stats-grid">
                 <div className="stat-card">
                     <div className="stat-label">Faculty Members</div>
@@ -72,6 +109,7 @@ function HODDashboard() {
                 </div>
             </div>
 
+            {/* Quick Links tailored to HOD responsibilities */}
             <div className="actions-section">
                 <h2 className="actions-header">Department Actions</h2>
                 <div className="actions-grid">
@@ -90,6 +128,7 @@ function HODDashboard() {
                 </div>
             </div>
 
+            {/* Hardcoded notice board (could be made dynamic later) */}
             <div className="card" style={{ marginTop: '2rem' }}>
                 <h3>Department Notices via Scheduler</h3>
                 <ul>
