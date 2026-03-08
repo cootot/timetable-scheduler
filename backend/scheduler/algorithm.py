@@ -212,16 +212,15 @@ class TimetableScheduler:
 
     def _build_faculty_tasks(self):
         """
-        From teacher_assignments, build per-faculty lists of tasks:
-          - 'lab'     : [(course, section, num_practical_slots), ...]
-          - 'theory'  : [(course, section, num_theory_slots), ...]
-          - 'lecture' : [(course, section, num_lecture_slots), ...]
+        From teacher_assignments, build per-faculty lists of tasks.
+        NOTE: We now merge 'theory' into 'lecture' (Phase C) to allow 
+        the algorithm to spread them across multiple days individually.
         """
         faculty_tasks = {}
 
         def get_tasks(teacher_id):
             if teacher_id not in faculty_tasks:
-                faculty_tasks[teacher_id] = {'lab': [], 'theory': [], 'lecture': []}
+                faculty_tasks[teacher_id] = {'lab': [], 'lecture': []}
             return faculty_tasks[teacher_id]
 
         for (course_id, section_id), teacher in self.teacher_assignments.items():
@@ -233,18 +232,15 @@ class TimetableScheduler:
 
             tasks = get_tasks(teacher.teacher_id)
 
-            # LAB slots
+            # LAB slots (Always continuous blocks)
             if course.practicals > 0:
                 tasks['lab'].append((course, section, course.practicals))
 
-            # THEORY slots (continuous block)
-            if course.theory > 0:
-                tasks['theory'].append((course, section, course.theory))
-
-            # LECTURE slots (remaining)
-            lec = course.weekly_slots - course.practicals - course.theory
-            if lec > 0:
-                tasks['lecture'].append((course, section, lec))
+            # ALL other hours (Theory + Lecture) are treated as individual slots
+            # to maximize the chance of having at least one class every day.
+            other_hours = course.weekly_slots - course.practicals
+            if other_hours > 0:
+                tasks['lecture'].append((course, section, other_hours))
 
         return faculty_tasks
 
@@ -254,236 +250,108 @@ class TimetableScheduler:
 
     def _schedule_faculty(self, teacher, tasks, ts_by_day):
         """
-        Schedule all tasks for one faculty member.
+        Schedule all tasks for one faculty member, ensuring load is spread across all 5 days.
         """
-        # PRIORITIZE CIR/LSE courses if any
-        def task_priority(task_list):
-            # Move LSE/CIR tasks to the front of their respective lists
-            task_list.sort(key=lambda x: ('Life Skills' in x[0].course_name or 'LSE' in x[0].course_id), reverse=True)
-            return task_list
+        lab_tasks = sorted(list(tasks.get('lab', [])), key=lambda x: ('LSE' in x[0].course_id or 'CIR' in x[0].course_id), reverse=True)
+        lec_tasks = sorted(list(tasks.get('lecture', [])), key=lambda x: ('LSE' in x[0].course_id or 'CIR' in x[0].course_id), reverse=True)
 
-        lab_tasks    = task_priority(list(tasks['lab']))
-        theory_tasks = task_priority(list(tasks['theory']))
-        lec_tasks    = task_priority(list(tasks['lecture']))
+        def get_sorted_days_for_teacher():
+            return sorted(DAYS, key=lambda d: self._teacher_daily_count(teacher, d))
 
         # ── Phase A: Schedule LAB blocks (2 consecutive) ──────────────
-        lab_days_used = set()   # days where this teacher already has a lab
-
+        lab_days_used = set()
         for (course, section, num_slots) in lab_tasks:
-            # num_slots is practicals count (usually 2-3).
-            # We cap to 2 consecutive for the rule "exactly 2 consecutive".
-            block_size = 2  # always exactly 2 consecutive slots per rule
-
+            block_size = 2
             placed = False
-            days = list(DAYS)
-            random.shuffle(days)
-
-            for day in days:
-                if day in lab_days_used:
-                    continue  # already a lab for this teacher today
-
-                # SECTION CONSTRAINT: check if this section already has a lab on this day
-                if self._section_has_lab_on_day(section, day):
-                    continue
+            # Spread labs to empty days first
+            sorted_days = get_sorted_days_for_teacher()
+            for day in sorted_days:
+                if day in lab_days_used: continue
+                if self._section_has_lab_on_day(section, day): continue
 
                 day_slots = ts_by_day.get(day, [])
-                # Try every consecutive pair
                 for i in range(len(day_slots) - block_size + 1):
                     window = day_slots[i: i + block_size]
+                    if not self._is_consecutive(window, check_breaks=True): continue
+                    if not self._window_free(window, teacher, section): continue
 
-                    # Must be truly consecutive AND not cross breaks (interval/lunch)
-                    if not self._is_consecutive(window, check_breaks=True):
-                        continue
-
-                    # Also ensure no existing LAB-day conflict for section
-                    if not self._window_free(window, teacher, section):
-                        continue
-
-                    # Find a LAB room free for the whole window
                     lab_room = self._find_room_for_window(window, room_type='LAB')
-                    if not lab_room:
-                        continue
+                    if not lab_room: continue
 
-                    # Commit
                     for ts in window:
-                        ScheduleEntry.objects.create(
-                            schedule=self.schedule,
-                            section=section,
-                            course=course,
-                            teacher=teacher,
-                            room=lab_room,
-                            timeslot=ts,
-                            is_lab_session=True
-                        )
+                        ScheduleEntry.objects.create(schedule=self.schedule, section=section, course=course, teacher=teacher, room=lab_room, timeslot=ts, is_lab_session=True)
                     lab_days_used.add(day)
                     placed = True
                     self.validator = ConstraintValidator(self.schedule)
                     break
-
-                if placed:
-                    break
-
+                if placed: break
             if not placed:
-                self._log_conflict(
-                    'LAB_UNPLACED',
-                    f"Could not place lab for {course.course_id} / {section.class_id}",
-                    'HIGH'
-                )
+                self._log_conflict('LAB_UNPLACED', f"Could not place lab for {course.course_id} / {section.class_id}", 'HIGH')
 
-        # ── Phase B: Schedule THEORY continuous blocks ────────────────
-        for (course, section, num_slots) in theory_tasks:
-            placed = False
-            days = list(DAYS)
-            random.shuffle(days)
-
-            for day in days:
-                # FACULTY CONSTRAINT: check if teacher can fit more classes today
-                count_on_day = self._teacher_daily_count(teacher, day)
-                if count_on_day >= MAX_THEORY_PER_FACULTY_PER_DAY + (1 if day in lab_days_used else 0):
-                    continue
-
-                # How many theory slots can we still fit today?
-                can_fit = (MAX_THEORY_PER_FACULTY_PER_DAY + (1 if day in lab_days_used else 0)) - count_on_day
-                slots_to_place = min(num_slots, can_fit)
-                if slots_to_place <= 0: continue
-
-                day_slots = ts_by_day.get(day, [])
-                # Try consecutive window
-                for i in range(len(day_slots) - slots_to_place + 1):
-                    window = day_slots[i: i + slots_to_place]
-                    # Theory blocks also shouldn't cross breaks for consistency
-                    if not self._is_consecutive(window, check_breaks=True):
-                        continue
-                    if not self._window_free(window, teacher, section):
-                        continue
-
-                    classroom = None
-                    prev_slot_room = self._get_adjacent_theory_room(teacher, section, window[0])
-                    if prev_slot_room and all(not self._room_busy(prev_slot_room, ts) for ts in window):
-                        classroom = prev_slot_room
-                    else:
-                        classroom = self._find_room_for_window(window, room_type='CLASSROOM')
-
-                    if not classroom:
-                        continue
-
-                    for ts in window:
-                        ScheduleEntry.objects.create(
-                            schedule=self.schedule,
-                            section=section,
-                            course=course,
-                            teacher=teacher,
-                            room=classroom,
-                            timeslot=ts,
-                            is_lab_session=False
-                        )
-                    placed = True
-                    self.validator = ConstraintValidator(self.schedule)
-                    break
-
-                if placed:
-                    break
-
-            if not placed:
-                self._log_conflict(
-                    'THEORY_UNPLACED',
-                    f"Could not place theory for {course.course_id} / {section.class_id}",
-                    'MEDIUM'
-                )
-
-        # ── Phase C: Schedule LECTURE slots (1 slot each) ─────────────
+        # ── Phase B: Schedule LECTURE / THEORY slots (Individual spread) ─────────────
         for (course, section, num_slots) in lec_tasks:
             remaining = num_slots
-
             while remaining > 0:
                 placed = False
-
-                # Faculty min-load priority
+                
+                # SPREAD PRIORITY: 
+                # 0. Day where teacher has ZERO classes (Force classes on every day)
+                # 1. Day where teacher has 1 class (Reach minimum load)
+                # 2. Other days, while respecting a Section max-per-day limit
                 def day_score(d):
-                    cnt = self._teacher_daily_count(teacher, d)
-                    if cnt >= 5: return 99
-                    if cnt == 1: return 0
-                    if cnt == 0:
-                        if remaining > 2: return 1
-                        return 5 
-                    if cnt == 2: return 2
-                    return 10 + cnt
+                    t_cnt = self._teacher_daily_count(teacher, d)
+                    s_cnt = self._section_daily_count(section, d)
+                    
+                    if t_cnt >= 5: return 900 # Absolute max for faculty
+                    if s_cnt >= 7: return 800 # Prevent student burnout/packing
+                    
+                    if t_cnt == 0: return 0  # Fill the empty days first!
+                    if t_cnt == 1: return 1  # Aim for at least 2 per day
+                    return 10 + t_cnt
 
                 sorted_days = sorted(DAYS, key=day_score)
 
                 for day in sorted_days:
-                    cnt = self._teacher_daily_count(teacher, day)
-                    if cnt >= 5: continue
+                    if self._teacher_daily_count(teacher, day) >= 6: continue
+                    if self._section_daily_count(section, day) >= 8: continue
 
                     slot_list = list(ts_by_day.get(day, []))
                     random.shuffle(slot_list)
 
                     for ts in slot_list:
-                        # Teacher busy?
                         if self._teacher_busy(teacher, ts): continue
-                        # Section busy?
                         if self._section_busy(section, ts): continue
-                        
-                        # NEW CONSTRAINT: Prevent same course on both sides of a break for a section
-                        if self._is_course_across_break(section, course, ts):
-                            continue
+                        if self._is_course_across_break(section, course, ts): continue
 
-                        # Room available?
-                        prev_slot_room = self._get_adjacent_theory_room(teacher, section, ts)
-                        if prev_slot_room and not self._room_busy(prev_slot_room, ts):
-                            room = prev_slot_room
-                        else:
-                            room = self._find_room_single(ts, room_type='CLASSROOM')
-                        
-                        if not room:
-                            continue
+                        prev_room = self._get_adjacent_theory_room(teacher, section, ts)
+                        room = prev_room if (prev_room and not self._room_busy(prev_room, ts)) else self._find_room_single(ts, room_type='CLASSROOM')
+                        if not room: continue
 
-                        ScheduleEntry.objects.create(
-                            schedule=self.schedule,
-                            section=section,
-                            course=course,
-                            teacher=teacher,
-                            room=room,
-                            timeslot=ts,
-                            is_lab_session=False
-                        )
+                        ScheduleEntry.objects.create(schedule=self.schedule, section=section, course=course, teacher=teacher, room=room, timeslot=ts, is_lab_session=False)
                         placed = True
                         remaining -= 1
                         self.validator = ConstraintValidator(self.schedule)
                         break
-
-                    if placed:
-                        break
+                    if placed: break
 
                 if not placed:
-                    # Final fallback: desperate search
+                    # Emergency fallback - ignored spread for valid placement
                     for day in DAYS:
+                        if self._teacher_daily_count(teacher, day) >= 8: continue
                         slot_list = list(ts_by_day.get(day, []))
                         for ts in slot_list:
                             if self._teacher_busy(teacher, ts) or self._section_busy(section, ts): continue
                             room = self._find_room_single(ts, room_type='CLASSROOM')
-                            if not room: continue
-                            ScheduleEntry.objects.create(
-                                schedule=self.schedule,
-                                section=section,
-                                course=course,
-                                teacher=teacher,
-                                room=room,
-                                timeslot=ts,
-                                is_lab_session=False
-                            )
-                            placed = True
-                            remaining -= 1
-                            self.validator = ConstraintValidator(self.schedule)
-                            break
+                            if room:
+                                ScheduleEntry.objects.create(schedule=self.schedule, section=section, course=course, teacher=teacher, room=room, timeslot=ts, is_lab_session=False)
+                                placed = True
+                                remaining -= 1
+                                self.validator = ConstraintValidator(self.schedule)
+                                break
                         if placed: break
 
                 if not placed:
-                    self._log_conflict(
-                        'LECTURE_UNPLACED',
-                        f"Could not place lecture for {course.course_id} / {section.class_id} ({teacher.teacher_name})",
-                        'MEDIUM'
-                    )
+                    self._log_conflict('LEC_UNPLACED', f"Could not place lec for {course.course_id}/{section.class_id} ({teacher.teacher_name})", 'MEDIUM')
                     break
 
     # ─────────────────────────────────────────────────────────────
@@ -491,16 +359,10 @@ class TimetableScheduler:
     # ─────────────────────────────────────────────────────────────
 
     def _is_consecutive(self, window, check_breaks=False):
-        """Check that timeslots in window have consecutive slot_numbers and (optionally) don't cross breaks."""
         if not window: return True
         for k in range(len(window) - 1):
-            s1 = window[k].slot_number
-            s2 = window[k + 1].slot_number
-            if s2 != s1 + 1:
-                return False
-            if check_breaks:
-                if s1 == INTERVAL_AFTER_SLOT or s1 == LUNCH_AFTER_SLOT:
-                    return False
+            if window[k+1].slot_number != window[k].slot_number + 1: return False
+            if check_breaks and (window[k].slot_number == INTERVAL_AFTER_SLOT or window[k].slot_number == LUNCH_AFTER_SLOT): return False
         return True
 
     def _teacher_busy(self, teacher, ts):
@@ -518,53 +380,51 @@ class TimetableScheduler:
     def _find_room_for_window(self, window, room_type='LAB'):
         rooms = list(Room.objects.filter(room_type=room_type))
         random.shuffle(rooms)
-        for room in rooms:
-            if all(not self._room_busy(room, ts) for ts in window):
-                return room
+        for r in rooms:
+            if all(not self._room_busy(r, ts) for ts in window): return r
         return None
 
     def _find_room_single(self, ts, room_type='CLASSROOM'):
         rooms = list(Room.objects.filter(room_type=room_type))
         random.shuffle(rooms)
-        for room in rooms:
-            if not self._room_busy(room, ts):
-                return room
+        for r in rooms:
+            if not self._room_busy(r, ts): return r
         return None
 
     def _get_adjacent_theory_room(self, teacher, section, ts):
-        """Room used by same teacher/section in prev/next slot for continuity."""
         if ts.slot_number > 1:
-            prev = ScheduleEntry.objects.filter(schedule=self.schedule, teacher=teacher, section=section, timeslot__day=ts.day, timeslot__slot_number=ts.slot_number - 1, is_lab_session=False).first()
-            if prev: return prev.room
-        next_e = ScheduleEntry.objects.filter(schedule=self.schedule, teacher=teacher, section=section, timeslot__day=ts.day, timeslot__slot_number=ts.slot_number + 1, is_lab_session=False).first()
-        if next_e: return next_e.room
+            p = ScheduleEntry.objects.filter(schedule=self.schedule, teacher=teacher, section=section, timeslot__day=ts.day, timeslot__slot_number=ts.slot_number - 1, is_lab_session=False).first()
+            if p: return p.room
+        n = ScheduleEntry.objects.filter(schedule=self.schedule, teacher=teacher, section=section, timeslot__day=ts.day, timeslot__slot_number=ts.slot_number + 1, is_lab_session=False).first()
+        if n: return n.room
         return None
 
     def _is_course_across_break(self, section, course, ts):
-        if ts.slot_number == INTERVAL_AFTER_SLOT + 1:
-            return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, course=course, timeslot__day=ts.day, timeslot__slot_number=INTERVAL_AFTER_SLOT).exists()
-        if ts.slot_number == INTERVAL_AFTER_SLOT:
-            return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, course=course, timeslot__day=ts.day, timeslot__slot_number=INTERVAL_AFTER_SLOT + 1).exists()
-        if ts.slot_number == LUNCH_AFTER_SLOT + 1:
-            return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, course=course, timeslot__day=ts.day, timeslot__slot_number=LUNCH_AFTER_SLOT).exists()
-        if ts.slot_number == LUNCH_AFTER_SLOT:
-            return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, course=course, timeslot__day=ts.day, timeslot__slot_number=LUNCH_AFTER_SLOT + 1).exists()
+        s = ts.slot_number
+        if s == INTERVAL_AFTER_SLOT + 1 or s == INTERVAL_AFTER_SLOT:
+            other = INTERVAL_AFTER_SLOT if s == INTERVAL_AFTER_SLOT + 1 else INTERVAL_AFTER_SLOT + 1
+            return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, course=course, timeslot__day=ts.day, timeslot__slot_number=other).exists()
+        if s == LUNCH_AFTER_SLOT + 1 or s == LUNCH_AFTER_SLOT:
+            other = LUNCH_AFTER_SLOT if s == LUNCH_AFTER_SLOT + 1 else LUNCH_AFTER_SLOT + 1
+            return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, course=course, timeslot__day=ts.day, timeslot__slot_number=other).exists()
         return False
 
     def _teacher_daily_count(self, teacher, day):
         return ScheduleEntry.objects.filter(schedule=self.schedule, teacher=teacher, timeslot__day=day).count()
 
+    def _section_daily_count(self, section, day):
+        # New helper to prevent packing a section's schedule into 3-4 days
+        return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, timeslot__day=day).count()
+
     def _section_has_lab_on_day(self, section, day):
         return ScheduleEntry.objects.filter(schedule=self.schedule, section=section, timeslot__day=day, is_lab_session=True).exists()
 
     def _log_conflict(self, conflict_type, description, severity):
-        """Centralized error reporter for administrators."""
         ConflictLog.objects.create(schedule=self.schedule, conflict_type=conflict_type, description=description, severity=severity)
         self.conflicts.append(description)
 
 
 def generate_schedule(schedule_id):
-    """Utility wrapper function to start the generation class."""
     try:
         schedule = Schedule.objects.get(schedule_id=schedule_id)
         scheduler = TimetableScheduler(schedule)
