@@ -53,9 +53,8 @@ class TestSchedulerAPI:
         }
         response = api_client.post(url, payload)
         
-        # Expect 201 Created or 200 OK depending on implementation
-        # The view returns 201 if successful
-        assert response.status_code == status.HTTP_201_CREATED
+        # The view returns 202 ACCEPTED as it's an asynchronous task
+        assert response.status_code == status.HTTP_202_ACCEPTED
         assert Schedule.objects.filter(name='New Schedule').exists()
         assert response.data['status'] in ['PENDING', 'GENERATING', 'COMPLETED']
 
