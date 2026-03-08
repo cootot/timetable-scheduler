@@ -78,28 +78,29 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("  Existing data cleared"))
 
     def import_teachers(self):
-        """Import teachers from teachers.csv"""
+        """Import teachers from teachers1.csv and teachers2.csv"""
         self.stdout.write("\nImporting teachers...")
         count = 0
 
-        filepath = os.path.join(self.datasets_path, "teachers.csv")
-        if not os.path.exists(filepath):
-            self.stdout.write(self.style.WARNING("  File not found: teachers.csv"))
-            return
+        for filename in ["teachers1.csv", "teachers2.csv"]:
+            filepath = os.path.join(self.datasets_path, filename)
+            if not os.path.exists(filepath):
+                self.stdout.write(self.style.WARNING(f"  File not found: {filename}"))
+                continue
 
-        with open(filepath, "r") as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                Teacher.objects.update_or_create(
-                    teacher_id=row["teacher_id"].strip(),
-                    defaults={
-                        "teacher_name": row["teacher_name"].strip(),
-                        "email": row["email"].strip(),
-                        "department": row["department"].strip(),
-                        "max_hours_per_week": int(row["max_hours_per_week"]),
-                    },
-                )
-                count += 1
+            with open(filepath, "r") as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    Teacher.objects.update_or_create(
+                        teacher_id=row["teacher_id"].strip(),
+                        defaults={
+                            "teacher_name": row["teacher_name"].strip(),
+                            "email": row["email"].strip(),
+                            "department": row["department"].strip(),
+                            "max_hours_per_week": int(row["max_hours_per_week"]),
+                        },
+                    )
+                    count += 1
 
         self.stdout.write(self.style.SUCCESS(f"  ✓ Imported {count} teachers"))
 
@@ -132,44 +133,7 @@ class Command(BaseCommand):
                     )
                     count += 1
 
-        # Import elective courses from electives.csv
-        # NOTE: electives.csv only has (course_id, course_name, elective_type) —
-        # no year/semester/credits columns. We apply sensible defaults:
-        #   lectures=2, theory=0, practicals=0, credits=2, weekly_slots=2
-        filepath = os.path.join(self.datasets_path, "electives.csv")
-        if os.path.exists(filepath):
-            with open(filepath, "r") as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    elective_type = row["elective_type"].strip()
-                    # Determine year from elective_type label
-                    if "Amrita Value Programme" in elective_type:
-                        year = 2
-                    elif "Free Elective" in elective_type:
-                        year = 2  # appears in year 2 & 4 — use 0 to signal year-wide
-                    elif "Professional Elective" in elective_type:
-                        year = 3  # appears in year 3 & 4 — use 0 to signal year-wide
-                    else:
-                        year = 2
 
-                    Course.objects.update_or_create(
-                        course_id=row["course_id"].strip(),
-                        defaults={
-                            "course_name": row["course_name"].strip(),
-                            "year": year,
-                            "semester": "odd",   # Both semesters; algorithm matches by mappings
-                            "lectures": 2,
-                            "theory": 0,
-                            "practicals": 0,
-                            "credits": 2,
-                            "is_lab": False,
-                            "is_elective": True,
-                            "is_project": False,
-                            "elective_type": elective_type,
-                            "weekly_slots": 2,
-                        },
-                    )
-                    count += 1
 
         self.stdout.write(self.style.SUCCESS(f"  ✓ Imported {count} courses"))
 
@@ -274,7 +238,7 @@ class Command(BaseCommand):
         skipped = 0
 
         # ── 1. Regular section-level mappings (columns: class_id, course_id, teacher_id, …)
-        for filename in ["mappingo.csv", "mappinge.csv"]:
+        for filename in ["mapping1.csv", "mapping2.csv"]:
             filepath = os.path.join(self.datasets_path, filename)
             if not os.path.exists(filepath):
                 self.stdout.write(self.style.WARNING(f"  File not found: {filename}"))
@@ -288,58 +252,12 @@ class Command(BaseCommand):
                     try:
                         teacher = Teacher.objects.get(teacher_id=row["teacher_id"].strip())
                         course = Course.objects.get(course_id=row["course_id"].strip())
-                        section = Section.objects.get(class_id=row["class_id"].strip())
-
-                        TeacherCourseMapping.objects.update_or_create(
-                            teacher=teacher,
-                            course=course,
-                            section=section,
-                            year=None,
-                            defaults={"preference_level": 3},
-                        )
-                        count += 1
-                    except (Teacher.DoesNotExist, Course.DoesNotExist, Section.DoesNotExist) as e:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f"  [{filename}] Skipping {row.get('teacher_id')} -> "
-                                f"{row.get('course_id')}: {str(e)}"
-                            )
-                        )
-                        skipped += 1
-
-        # ── 2. Elective year-level mappings (columns: class_id='CSE2'/'CSE3'/'CSE4', course_id, teacher_id, …)
-        for filename in ["mappingoe.csv", "mappingee.csv"]:
-            filepath = os.path.join(self.datasets_path, filename)
-            if not os.path.exists(filepath):
-                self.stdout.write(self.style.WARNING(f"  File not found: {filename}"))
-                continue
-
-            with open(filepath, "r") as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    if not row.get("teacher_id") or not row.get("course_id"):
-                        continue
-                    try:
-                        teacher = Teacher.objects.get(teacher_id=row["teacher_id"].strip())
-                        course = Course.objects.get(course_id=row["course_id"].strip())
-                        year = int(row["year"])
-
-                        # The file name mappingoe.csv implies odd, mappingee.csv implies even.
-                        semester = "even" if "ee" in filename else "odd"
-
-                        # Ensure the elective course has the correct semester and year
-                        # assigned from the mapping file (since electives.csv lacks it).
-                        course.semester = semester
-                        course.year = year
-                        course.is_elective = True
-                        course.is_project = False  # Explicitly NOT a project
-                        course.save()
 
                         TeacherCourseMapping.objects.update_or_create(
                             teacher=teacher,
                             course=course,
                             section=None,
-                            year=year,
+                            year=course.year,
                             defaults={"preference_level": 3},
                         )
                         count += 1
@@ -352,55 +270,7 @@ class Command(BaseCommand):
                         )
                         skipped += 1
 
-        # ── 3. Project domain-level mappings (columns: domain_id, year, course_id, teacher_id, course_name=domain)
-        for filename in ["mappingop.csv", "mappingep.csv"]:
-            filepath = os.path.join(self.datasets_path, filename)
-            if not os.path.exists(filepath):
-                self.stdout.write(self.style.WARNING(f"  File not found: {filename}"))
-                continue
 
-            with open(filepath, "r") as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    if not row.get("teacher_id") or not row.get("course_id"):
-                        continue
-                    try:
-                        teacher = Teacher.objects.get(teacher_id=row["teacher_id"].strip())
-                        course = Course.objects.get(course_id=row["course_id"].strip())
-                        year = int(row["year"])
-                        domain_id = int(row["domain_id"])
-                        # In project mapping files, course_name actually holds the domain name
-                        domain_name = row.get("course_name", "").strip()
-                        
-                        # Fix: Determine semester from filename
-                        semester = "even" if "ep" in filename else "odd"
-                        
-                        # Ensure course attributes are updated
-                        course.is_project = True
-                        course.semester = semester
-                        course.year = year
-                        course.save()
-
-                        TeacherCourseMapping.objects.update_or_create(
-                            teacher=teacher,
-                            course=course,
-                            section=None,
-                            year=year,
-                            defaults={
-                                "preference_level": 3,
-                                "domain_id": domain_id,
-                                "domain_name": domain_name,
-                            },
-                        )
-                        count += 1
-                    except (Teacher.DoesNotExist, Course.DoesNotExist) as e:
-                        self.stdout.write(
-                            self.style.WARNING(
-                                f"  [{filename}] Skipping {row.get('teacher_id')} -> "
-                                f"{row.get('course_id')}: {str(e)}"
-                            )
-                        )
-                        skipped += 1
 
         self.stdout.write(
             self.style.SUCCESS(

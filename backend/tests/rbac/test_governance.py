@@ -18,7 +18,7 @@ def admin_user(db):
 def hod_user(db):
     return User.objects.create_user(username='hod', role='HOD')
 
-@pytest.mark.django_db
+@pytest.mark.django_db(databases=['default', 'audit_db'])
 class TestGovernanceRBAC:
     """Tests for system governance access (Audit Logs, Constraints)"""
 

@@ -37,6 +37,9 @@ timetable-scheduler/
 │   └── package.json
 ├── Datasets/                   # Core CSV Datasets for Institutional Data
 ├── docs/                       # Project Documentation & UML Diagrams
+│   ├── API_DOCUMENTATION.md   # Complete REST API reference
+│   ├── DEV_DOCUMENTATION.md   # Developer setup & architecture guide
+│   └── USER_DOCUMENTATION.md  # Guide for Admins, HODs, and Faculty
 └── README.md                   # This file
 ```
 

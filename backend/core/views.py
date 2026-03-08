@@ -341,6 +341,12 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
         """Automatically set requested_by to current user"""
         serializer.save(requested_by=self.request.user)
     
+    @action(detail=False, methods=['get'])
+    def pending_count(self, request):
+        """Get count of pending requests for the current user."""
+        count = self.get_queryset().filter(status='PENDING').count()
+        return Response({'count': count})
+    
     @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
     def approve(self, request, pk=None):
         """

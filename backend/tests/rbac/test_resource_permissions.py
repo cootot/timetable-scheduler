@@ -18,7 +18,7 @@ def admin_user(db):
 def faculty_user(db):
     return User.objects.create_user(username='faculty', role='FACULTY')
 
-@pytest.mark.django_db
+@pytest.mark.django_db(databases=['default', 'audit_db'])
 class TestResourcePermissions:
     """Tests for role-based access to core resources (Read all, Write HOD/Admin)"""
 

@@ -117,6 +117,7 @@ class TimetableScheduler:
             
             # Update the parent record and mark success
             self.schedule.quality_score = quality
+            # Persist status completion explicitly to signal UI polling mechanisms
             self.schedule.status = 'COMPLETED'
             self.schedule.completed_at = timezone.now()
             self.schedule.save()

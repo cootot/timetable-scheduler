@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db.models import Count, Avg
 from core.models import Schedule, ScheduleEntry, Teacher, Room, Section, TimeSlot, Course
 from core.serializers import ScheduleSerializer, ScheduleDetailSerializer
-from .algorithm import generate_schedule
+from .tasks import generate_schedule_async
 from .email_utils import send_publish_notifications, send_deadline_reminders
 from accounts.permissions import IsHODOrAdmin, IsFacultyOrAbove
 
@@ -43,17 +43,17 @@ def trigger_generation(request):
         status='PENDING'
     )
     
-    # Generate schedule (synchronous for Sprint 1)
-    success, message = generate_schedule(schedule.schedule_id)
+    # Generate schedule asynchronously (Celery)
+    generate_schedule_async.delay(schedule.schedule_id)
     
     serializer = ScheduleSerializer(schedule)
     
     return Response({
         "schedule_id": schedule.schedule_id,
         "status": schedule.status,
-        "message": message,
+        "message": "Schedule generation queued successfully and is processing in the background.",
         "data": serializer.data
-    }, status=status.HTTP_201_CREATED if success else status.HTTP_500_INTERNAL_SERVER_ERROR)
+    }, status=status.HTTP_202_ACCEPTED)
 
 
 @api_view(['GET'])

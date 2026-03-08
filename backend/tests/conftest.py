@@ -2,8 +2,14 @@ import pytest
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 from core.models import Teacher, Room, Course, Section, TimeSlot, Schedule
+from django.conf import settings
 
 User = get_user_model()
+
+@pytest.fixture(autouse=True)
+def _mock_email_backend(settings):
+    settings.EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+
 
 @pytest.fixture
 def api_client():

@@ -22,7 +22,7 @@ def hod_user(db):
 def hod_user_2(db):
     return User.objects.create_user(username='hod2', role='HOD', department='ECE')
 
-@pytest.mark.django_db
+@pytest.mark.django_db(databases=['default', 'audit_db'])
 class TestChangeRequestRBAC:
     """Tests for role-based viewing and approval of change requests"""
 

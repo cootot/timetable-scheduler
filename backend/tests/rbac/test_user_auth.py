@@ -39,7 +39,7 @@ def faculty_user(db):
         department='CSE'
     )
 
-@pytest.mark.django_db
+@pytest.mark.django_db(databases=['default', 'audit_db'])
 class TestRBACPermissions:
     """Tests for custom permission classes logic"""
 
@@ -61,7 +61,7 @@ class TestRBACPermissions:
         assert permission.has_permission(type('Request', (), {'user': hod_user})(), None) is True
         assert permission.has_permission(type('Request', (), {'user': faculty_user})(), None) is True
 
-@pytest.mark.django_db
+@pytest.mark.django_db(databases=['default', 'audit_db'])
 class TestUserAuthEndpoints:
     """Tests for User authentication and profile endpoints"""
 

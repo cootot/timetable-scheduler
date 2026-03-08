@@ -192,6 +192,7 @@ export const changeRequestAPI = {
   create: (data) => api.post('/change-requests/', data),
   approve: (id, admin_notes = '') => api.post(`/change-requests/${id}/approve/`, { admin_notes }),
   reject: (id, admin_notes = '') => api.post(`/change-requests/${id}/reject/`, { admin_notes }),
+  getPendingCount: () => api.get('/change-requests/pending_count/'),
 };
 
 export const notificationAPI = {

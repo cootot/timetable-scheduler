@@ -16,9 +16,8 @@ import { Link } from 'react-router-dom';
 
 // Import global Auth Context to identify which department this user belongs to
 import { useAuth } from '../../context/AuthContext';
-
-// Import specific API endpoints allowed for HODs
-import { teacherAPI, sectionAPI } from '../../services/api';
+// Import specific API endpoints allowed for HODs, plus change requests for dynamic pending stats
+import { teacherAPI, sectionAPI, changeRequestAPI } from '../../services/api';
 
 function HODDashboard() {
     // ---------------------------------------------------------
@@ -33,7 +32,7 @@ function HODDashboard() {
         deptSections: 0,
         pendingApprovals: 0,
     });
-    
+
     // Loading flag
     const [loading, setLoading] = useState(true);
 
@@ -53,15 +52,16 @@ function HODDashboard() {
         if (!user?.department) return;
 
         try {
-            // Fetch teachers and sections concurrently
-            const [teachers, sections] = await Promise.all([
+            // Fetch teachers, sections, and dynamic pending request counts concurrently
+            const [teachers, sections, pendingRes] = await Promise.all([
                 teacherAPI.byDepartment(user.department), // Requires specialized backend endpoint
                 sectionAPI.getAll(),                      // Fetches all, filters locally
+                changeRequestAPI.getPendingCount().catch(() => ({ data: { count: 0 } }))
             ]);
 
             // Safely extract the data arrays regardless of pagination settings
             const sectionData = sections.data.results || sections.data || [];
-            
+
             // Client-side filtering: Only keep sections matching this HOD's department
             const deptSections = sectionData.filter(s => s.department === user.department);
 
@@ -70,7 +70,7 @@ function HODDashboard() {
                 deptTeachers: teachers.data.results?.length || teachers.data.length || 0,
                 deptCourses: 0, // Placeholder, would need a specialized department-course endpoint
                 deptSections: deptSections.length,
-                pendingApprovals: 2, // Mock data indicating pending HOD review tasks
+                pendingApprovals: pendingRes.data.count || 0,
             });
         } catch (error) {
             console.error('Error loading HOD stats:', error);

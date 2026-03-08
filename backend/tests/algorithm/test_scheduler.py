@@ -15,25 +15,25 @@ Tests performed:
 - TC_SCHED_06: Graceful failure for impossible constraints
 """
 
-# Define base path to backend for imports
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-BACKEND_DIR = os.path.join(BASE_DIR, 'backend')
-if BACKEND_DIR not in sys.path:
-    sys.path.append(BACKEND_DIR)
+import os
+import sys
+import unittest
+from unittest.mock import MagicMock, patch
+import pytest
 
-# Mock core.models BEFORE importing scheduler logic to avoid Django configuration issues
-mock_models = MagicMock()
-sys.modules['core.models'] = mock_models
-
-# Import logic now that models are mocked
 from scheduler.constraints import ConstraintValidator
 from scheduler.algorithm import TimetableScheduler
+from core.models import Schedule
 
-class TestSchedulerSuite(unittest.TestCase):
+from django.test import TestCase
+
+@pytest.mark.django_db
+class TestSchedulerSuite(TestCase):
+    databases = '__all__'
+    
     def setUp(self):
-        self.schedule = MagicMock()
+        self.schedule = Schedule.objects.create(name="Test Sched", semester="even", year=1, status="PENDING")
         self.validator = ConstraintValidator(self.schedule)
-        # Mock existing_entries for validator
         self.validator.existing_entries = MagicMock()
         
     # --- Constraint Tests ---
