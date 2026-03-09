@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { scheduleAPI, schedulerAPI, sectionAPI, teacherAPI, courseAPI, roomAPI } from '../services/api';
+import { scheduleAPI, schedulerAPI, sectionAPI, teacherAPI, courseAPI, roomAPI, changeRequestAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -57,6 +57,15 @@ function ViewTimetable() {
 
     // ── Publish state ──
     const [publishing, setPublishing] = useState(false);
+
+    // ── Swap Faculty state ──
+    const [showSwapModal, setShowSwapModal] = useState(false);
+    const [swapTarget, setSwapTarget] = useState(null); // { entryId, courseId, sectionId, currentTeacherId, currentTeacherName, timeslotId }
+    const [availableFaculty, setAvailableFaculty] = useState([]);
+    const [loadingFaculty, setLoadingFaculty] = useState(false);
+    const [submittingSwap, setSubmittingSwap] = useState(false);
+    const [swapNotes, setSwapNotes] = useState('');
+    const [selectedNewTeacher, setSelectedNewTeacher] = useState('');
 
     // ── Drag-and-drop state ──
     const [dragging, setDragging] = useState(null);          // { entryId, day, slot, lastModified, classItem }
@@ -240,6 +249,93 @@ function ViewTimetable() {
 
     const selectedScheduleObj = schedules.find(s => s.schedule_id == selectedSchedule);
     const isPublished = selectedScheduleObj?.status === 'PUBLISHED';
+
+    // ── Swap Faculty ──
+    const handleOpenSwapModal = async (classItem) => {
+        setSwapTarget({
+            entryId: classItem.entry_id,
+            courseId: classItem.course_code,
+            sectionId: classItem.section,
+            currentTeacherId: classItem.teacher_id,
+            currentTeacherName: classItem.teacher_name,
+            timeslotId: classItem.timeslot_id
+        });
+        setShowSwapModal(true);
+        setLoadingFaculty(true);
+        setAvailableFaculty([]);
+        setSelectedNewTeacher('');
+
+        try {
+            const res = await scheduleAPI.getAvailableFaculty(
+                selectedSchedule,
+                classItem.course_code,
+                classItem.section
+            );
+            // Filter out the current teacher
+            const filtered = res.data.filter(t => t.teacher_id !== classItem.teacher_id);
+            setAvailableFaculty(filtered);
+        } catch (error) {
+            console.error('Error fetching available faculty:', error);
+            setMoveStatus({ type: 'error', message: 'Failed to load available faculty.' });
+        } finally {
+            setLoadingFaculty(false);
+        }
+    };
+
+    const handleSubmitSwapRequest = async () => {
+        if (!selectedNewTeacher) return;
+        setSubmittingSwap(true);
+        try {
+            const isAdmin = user?.role === 'ADMIN';
+
+            if (isAdmin) {
+                // Direct swap for admins
+                await scheduleAPI.swapFaculty(
+                    selectedSchedule,
+                    swapTarget.courseId,
+                    swapTarget.sectionId,
+                    selectedNewTeacher
+                );
+                setMoveStatus({ type: 'success', message: 'Faculty swapped successfully.' });
+                await loadTimetable(); // Refresh to show changes immediately
+            } else {
+                // Request for HODs
+                const proposedData = {
+                    entry_id: swapTarget.entryId,
+                    new_teacher_id: selectedNewTeacher,
+                    course_id: swapTarget.courseId,
+                    section_id: swapTarget.sectionId,
+                    timeslot_id: swapTarget.timeslotId
+                };
+                const currentData = {
+                    current_teacher_id: swapTarget.currentTeacherId,
+                    current_teacher_name: swapTarget.currentTeacherName
+                };
+
+                await changeRequestAPI.create({
+                    target_model: 'ScheduleEntry',
+                    target_id: swapTarget.entryId.toString(),
+                    change_type: 'SWAP',
+                    proposed_data: proposedData,
+                    current_data: currentData,
+                    request_notes: swapNotes || `Swap teacher for ${swapTarget.courseId} (${swapTarget.sectionId})`
+                });
+
+                setMoveStatus({ type: 'success', message: 'Swap request submitted to admin.' });
+            }
+
+            setShowSwapModal(false);
+        } catch (error) {
+            console.error('Error submitting swap:', error);
+            const isAdmin = user?.role === 'ADMIN';
+            setMoveStatus({
+                type: 'error',
+                message: error.response?.data?.error || `Failed to ${isAdmin ? 'apply' : 'submit'} swap.`
+            });
+        } finally {
+            setSubmittingSwap(false);
+        }
+    };
 
     // ── PDF ──
     const handleDownloadPDF = () => {
@@ -853,6 +949,28 @@ function ViewTimetable() {
                                                         <div className="class-teacher">{classItem.teacher_name}</div>
                                                         <div className="class-room">Room: {classItem.room}</div>
                                                         <div className="class-room">Sec: {classItem.section}</div>
+
+                                                        {isAdminOrHOD && (
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                style={{
+                                                                    fontSize: '0.7rem',
+                                                                    padding: '4px 8px',
+                                                                    marginTop: '8px',
+                                                                    width: '100%',
+                                                                    background: 'var(--primary)',
+                                                                    color: '#fff',
+                                                                    fontWeight: 'bold',
+                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                                }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOpenSwapModal(classItem);
+                                                                }}
+                                                            >
+                                                                🔄 Swap Faculty
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
@@ -894,6 +1012,96 @@ function ViewTimetable() {
             {!selectedSchedule && (
                 <div className="alert alert-info">
                     Please select a schedule to view the timetable.
+                </div>
+            )}
+
+            {/* Swap Faculty Modal */}
+            {showSwapModal && swapTarget && (
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1100
+                }}>
+                    <div className="modal-content" style={{
+                        background: 'white', padding: '2rem', borderRadius: '12px',
+                        width: '90%', maxWidth: '500px', boxShadow: 'var(--shadow-lg)'
+                    }}>
+                        <h2 style={{ marginBottom: '1rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {user?.role === 'ADMIN' ? '🔄 Direct Faculty Swap' : '🔄 Request Faculty Swap'}
+                        </h2>
+
+                        <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                            {user?.role === 'ADMIN'
+                                ? `You are directly replacing ${swapTarget.currentTeacherName} with a new teacher across ALL slots.`
+                                : `This will request to replace ${swapTarget.currentTeacherName} with a new teacher for ALL scheduled slots of ${swapTarget.courseId} for ${swapTarget.sectionId}.`}
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                            <label className="filter-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Select Replacement Teacher</label>
+                            {loadingFaculty ? (
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Finding available faculty...</div>
+                            ) : (
+                                <select
+                                    className="filter-select"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }}
+                                    value={selectedNewTeacher}
+                                    onChange={(e) => setSelectedNewTeacher(e.target.value)}
+                                >
+                                    <option value="">-- Choose available teacher --</option>
+                                    {availableFaculty.length === 0 ? (
+                                        <option disabled>No other teachers available at this time</option>
+                                    ) : (
+                                        availableFaculty.map(t => (
+                                            <option key={t.teacher_id} value={t.teacher_id}>
+                                                {t.teacher_name} ({t.department})
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                            )}
+                        </div>
+
+                        {user?.role === 'HOD' && (
+                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                                <label className="filter-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Reason for Swap (Notes for Admin)</label>
+                                <textarea
+                                    className="filter-select"
+                                    style={{ width: '100%', height: '80px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', resize: 'none' }}
+                                    placeholder="E.g., Teacher on medical leave, urgent duty..."
+                                    value={swapNotes}
+                                    onChange={(e) => setSwapNotes(e.target.value)}
+                                />
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                            <button
+                                className="btn btn-secondary"
+                                style={{ padding: '8px 16px' }}
+                                onClick={() => setShowSwapModal(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                className="btn btn-primary"
+                                style={{
+                                    padding: '8px 16px',
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: (!selectedNewTeacher || submittingSwap) ? 'not-allowed' : 'pointer',
+                                    opacity: (!selectedNewTeacher || submittingSwap) ? 0.7 : 1
+                                }}
+                                disabled={!selectedNewTeacher || submittingSwap}
+                                onClick={handleSubmitSwapRequest}
+                            >
+                                {submittingSwap
+                                    ? (user?.role === 'ADMIN' ? 'Applying...' : 'Submitting...')
+                                    : (user?.role === 'ADMIN' ? 'Apply Swap' : 'Submit Request')}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

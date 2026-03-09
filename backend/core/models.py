@@ -127,6 +127,7 @@ class ChangeRequest(models.Model):
         ('CREATE', 'Create New'),
         ('UPDATE', 'Update Existing'),
         ('DELETE', 'Delete'),
+        ('SWAP', 'Swap Faculty'),
     ]
     
     # The HOD user who submitted the request

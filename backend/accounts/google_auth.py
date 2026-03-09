@@ -26,10 +26,35 @@ class GoogleLoginView(APIView):
         try:
             # 1. Verify Google token
             # Note: In a real environment, use settings.GOOGLE_CLIENT_ID
-            # For now, we'll try to verify it, but if it fails with "audience mismatch" 
-            # and we are in a dev environment, we might want to handle it.
-            # But the user specifically asked for this, so let's do it right.
-            idinfo = id_token.verify_oauth2_token(token, requests.Request(), settings.GOOGLE_CLIENT_ID)
+            
+            # Debug: Log client ID and first part of token
+            logger.info(f"Attempting Google login for client: {settings.GOOGLE_CLIENT_ID}")
+            token_prefix = token[:10] + "..." if token else "None"
+            logger.info(f"Token prefix: {token_prefix}")
+
+            try:
+                # Add clock_skew tolerance (10 seconds) to handle server time differences
+                idinfo = id_token.verify_oauth2_token(
+                    token, 
+                    requests.Request(), 
+                    settings.GOOGLE_CLIENT_ID,
+                    clock_skew_in_seconds=10
+                )
+            except ValueError as e:
+                # If verification fails, try to peek at the audience to see if it's a mismatch
+                import json
+                import base64
+                try:
+                    # JWT is [header].[payload].[signature]
+                    _, payload_b64, _ = token.split('.')
+                    # Add padding if needed
+                    payload_b64 += '=' * (-len(payload_b64) % 4)
+                    payload_json = base64.b64decode(payload_b64).decode('utf-8')
+                    payload = json.loads(payload_json)
+                    logger.error(f"Google Token Verification Failed. Token Aud: {payload.get('aud')}, Expected Aud: {settings.GOOGLE_CLIENT_ID}")
+                except Exception as peek_error:
+                    logger.error(f"Could not peek at token payload: {str(peek_error)}")
+                raise e
             
             email = idinfo['email']
             
@@ -95,7 +120,7 @@ class GoogleLoginView(APIView):
 
         except ValueError as e:
             logger.error(f"Invalid Google Token: {str(e)}")
-            return Response({'error': 'Invalid Google Token'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'error': f'DEBUG_CANARY_V3_FIXED: Invalid Google Token: {str(e)}'}, status=status.HTTP_401_UNAUTHORIZED)
         except Exception as e:
             logger.error(f"Google Login Error: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -139,6 +139,14 @@ export const scheduleAPI = {
   getEntries: (id) => api.get(`/schedules/${id}/entries/`),
   getConflicts: (id) => api.get(`/schedules/${id}/conflicts/`),
   getFilters: (id) => api.get(`/schedules/${id}/filters/`),
+  getAvailableFaculty: (id, courseId, sectionId) =>
+    api.get(`/schedules/${id}/available_faculty/?course_id=${courseId}&section_id=${sectionId}`),
+  swapFaculty: (id, courseId, sectionId, newTeacherId) =>
+    api.post(`/schedules/${id}/swap_faculty/`, {
+      course_id: courseId,
+      section_id: sectionId,
+      new_teacher_id: newTeacherId
+    }),
 };
 
 

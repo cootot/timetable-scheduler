@@ -12,6 +12,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Count, Q
+from django.db import transaction
 from django.utils import timezone
 from .models import (
     User, Teacher, Course, Room, TimeSlot, Section,
@@ -289,6 +290,97 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             'rooms': [{'room_id': r['room_id'], 'block': r['room__block']} for r in rooms]
         })
 
+    @action(detail=True, methods=['get'])
+    def available_faculty(self, request, pk=None):
+        """
+        Find faculty available during ALL timeslots for a specific course/section.
+        """
+        course_id = request.query_params.get('course_id')
+        section_id = request.query_params.get('section_id')
+        
+        if not all([course_id, section_id]):
+            return Response({'error': 'Missing course_id or section_id'}, status=400)
+            
+        # 1. Find all timeslots where this course/section is scheduled in this schedule
+        target_slots = ScheduleEntry.objects.filter(
+            schedule_id=pk,
+            course_id=course_id,
+            section_id=section_id
+        ).values_list('timeslot_id', flat=True)
+        
+        if not target_slots:
+            return Response({'error': 'No entries found for this course/section in this schedule'}, status=404)
+            
+        # 2. Find teachers who are ALREADY busy in ANY of these timeslots
+        busy_teacher_ids = ScheduleEntry.objects.filter(
+            schedule_id=pk,
+            timeslot_id__in=target_slots
+        ).values_list('teacher_id', flat=True).distinct()
+        
+        # 3. Join with TeacherCourseMapping to ensure they CAN teach this course
+        qualified_teacher_ids = TeacherCourseMapping.objects.filter(
+            course_id=course_id
+        ).values_list('teacher_id', flat=True)
+        
+        # 4. Result: Qualified teachers who are NOT busy in ANY of the target slots
+        available_teachers = Teacher.objects.filter(
+            teacher_id__in=qualified_teacher_ids
+        ).exclude(
+            teacher_id__in=busy_teacher_ids
+        )
+        
+        serializer = TeacherSerializer(available_teachers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdmin])
+    def swap_faculty(self, request, pk=None):
+        """
+        Directly swap faculty for a specific course/section across the entire schedule.
+        Admin only. Immediate effect.
+        """
+        course_id = request.data.get('course_id')
+        section_id = request.data.get('section_id')
+        new_teacher_id = request.data.get('new_teacher_id')
+        
+        if not all([course_id, section_id, new_teacher_id]):
+            return Response({'error': 'Missing course_id, section_id, or new_teacher_id'}, status=400)
+            
+        try:
+            with transaction.atomic():
+                new_teacher = Teacher.objects.get(teacher_id=new_teacher_id)
+                
+                # 1. Update EVERY ScheduleEntry for this course/section in this schedule
+                updated_entries = ScheduleEntry.objects.filter(
+                    schedule_id=pk,
+                    course_id=course_id,
+                    section_id=section_id
+                ).update(teacher=new_teacher)
+                
+                # 2. Update/Create TeacherCourseMapping for persistence
+                mapping_updated = TeacherCourseMapping.objects.filter(
+                    course_id=course_id,
+                    section_id=section_id
+                ).update(teacher=new_teacher)
+                
+                if not mapping_updated:
+                    course = Course.objects.get(course_id=course_id)
+                    TeacherCourseMapping.objects.create(
+                        teacher=new_teacher,
+                        course_id=course_id,
+                        section_id=section_id,
+                        year=course.year,
+                        preference_level=2
+                    )
+                
+                return Response({
+                    'message': f'Successfully swapped faculty. {updated_entries} slots updated.',
+                    'updated_entries': updated_entries
+                })
+        except Teacher.DoesNotExist:
+            return Response({'error': f'Teacher {new_teacher_id} not found'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)
+
 
 class ScheduleEntryViewSet(viewsets.ModelViewSet):
     """
@@ -422,74 +514,116 @@ class ChangeRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+        from django.db import transaction
         try:
-            if change_request.target_model == 'Teacher':
-                if change_request.change_type == 'UPDATE':
-                    # Update existing teacher
-                    teacher = Teacher.objects.get(teacher_id=change_request.target_id)
-                    proposed_data = change_request.proposed_data.copy()
-                    
-                    # Extract mappings if present
-                    mappings = proposed_data.pop('mappings', None)
-                    
-                    # Update basic teacher fields
-                    for key, value in proposed_data.items():
-                        if hasattr(teacher, key):
-                            setattr(teacher, key, value)
-                    teacher.save()
-                    
-                    # Sync course mappings if provided
-                    if mappings is not None:
-                        # Clear old mappings and replace with new ones
-                        TeacherCourseMapping.objects.filter(teacher=teacher).delete()
-                        for m_data in mappings:
-                            course = Course.objects.get(course_id=m_data['course_id'])
-                            TeacherCourseMapping.objects.create(
-                                teacher=teacher,
-                                course=course,
-                                section_id=m_data.get('section_id'),
-                                year=m_data.get('year') or course.year,
-                                preference_level=2 # Set high priority for HOD requests
-                            )
-                
-                elif change_request.change_type == 'CREATE':
-                    # Create new teacher
-                    proposed_data = change_request.proposed_data.copy()
-                    mappings = proposed_data.pop('mappings', None)
-                    teacher = Teacher.objects.create(**proposed_data)
-                    
-                    if mappings:
-                        for m_data in mappings:
-                            course = Course.objects.get(course_id=m_data['course_id'])
-                            TeacherCourseMapping.objects.create(
-                                teacher=teacher,
-                                course=course,
-                                section_id=m_data.get('section_id'),
-                                year=m_data.get('year') or course.year,
-                                preference_level=2 # Set high priority for HOD requests
-                            )
-                
-                elif change_request.change_type == 'DELETE':
-                    # Delete teacher
-                    teacher = Teacher.objects.get(teacher_id=change_request.target_id)
-                    teacher.delete()
-            
-            # Update request status
-            change_request.status = 'APPROVED'
-            change_request.reviewed_by = request.user
-            change_request.reviewed_at = timezone.now()
-            change_request.admin_notes = request.data.get('admin_notes', '')
-            change_request.save()
+            with transaction.atomic():
+                if change_request.target_model == 'Teacher':
+                    # ... [existing teacher logic] ...
+                    if change_request.change_type == 'UPDATE':
+                        teacher = Teacher.objects.get(teacher_id=change_request.target_id)
+                        proposed_data = change_request.proposed_data.copy()
+                        mappings = proposed_data.pop('mappings', None)
+                        for key, value in proposed_data.items():
+                            if hasattr(teacher, key):
+                                setattr(teacher, key, value)
+                        teacher.save()
+                        if mappings is not None:
+                            TeacherCourseMapping.objects.filter(teacher=teacher).delete()
+                            for m_data in mappings:
+                                course = Course.objects.get(course_id=m_data['course_id'])
+                                TeacherCourseMapping.objects.create(
+                                    teacher=teacher, course=course,
+                                    section_id=m_data.get('section_id'),
+                                    year=m_data.get('year') or course.year,
+                                    preference_level=2
+                                )
+                    elif change_request.change_type == 'CREATE':
+                        proposed_data = change_request.proposed_data.copy()
+                        mappings = proposed_data.pop('mappings', None)
+                        teacher = Teacher.objects.create(**proposed_data)
+                        if mappings:
+                            for m_data in mappings:
+                                course = Course.objects.get(course_id=m_data['course_id'])
+                                TeacherCourseMapping.objects.create(
+                                    teacher=teacher, course=course,
+                                    section_id=m_data.get('section_id'),
+                                    year=m_data.get('year') or course.year,
+                                    preference_level=2
+                                )
+                    elif change_request.change_type == 'DELETE':
+                        teacher = Teacher.objects.get(teacher_id=change_request.target_id)
+                        teacher.delete()
 
-            # Notify the requesting HOD
+                elif change_request.change_type == 'SWAP':
+                    proposed = change_request.proposed_data
+                    entry_id = proposed.get('entry_id')
+                    new_teacher_id = proposed.get('new_teacher_id')
+                    
+                    if not entry_id or not new_teacher_id:
+                        raise Exception("Missing entry_id or new_teacher_id in proposal")
+                        
+                    ref_entry = ScheduleEntry.objects.get(id=entry_id)
+                    new_teacher = Teacher.objects.get(teacher_id=new_teacher_id)
+                    old_teacher_id = ref_entry.teacher_id
+                    
+                    # 1. Update EVERY ScheduleEntry for this course/section in this schedule
+                    updated_entries = ScheduleEntry.objects.filter(
+                        schedule_id=ref_entry.schedule_id,
+                        course_id=ref_entry.course_id,
+                        section_id=ref_entry.section_id
+                    ).update(teacher=new_teacher)
+                    
+                    # 2. Update/Create TeacherCourseMapping for persistence
+                    # First try to find a section-specific mapping
+                    mapping_updated = TeacherCourseMapping.objects.filter(
+                        course_id=ref_entry.course_id,
+                        section_id=ref_entry.section_id
+                    ).update(teacher=new_teacher)
+                    
+                    # If no section-specific mapping, check for a year-wide one if it was taught by the old teacher
+                    if not mapping_updated:
+                        # We don't want to update a year-wide mapping as it affects other sections
+                        # Instead, we create a section-specific override for the new teacher
+                        TeacherCourseMapping.objects.create(
+                            teacher=new_teacher,
+                            course_id=ref_entry.course_id,
+                            section_id=ref_entry.section_id,
+                            year=ref_entry.course.year, # Assuming course.year is available
+                            preference_level=2
+                        )
+                        mapping_updated = "CREATED_OVERRIDE"
+
+                    diag_info = f"[Bulk Swap] Updated {updated_entries} slots. Mapping: {mapping_updated}. Schedule: {ref_entry.schedule_id}"
+                
+                # Update Request Status
+                change_request.status = 'APPROVED'
+                change_request.reviewed_by = request.user
+                change_request.reviewed_at = timezone.now()
+                
+                # Append diagnostic info if it's a swap
+                original_notes = request.data.get('admin_notes', '')
+                if change_request.change_type == 'SWAP':
+                    change_request.admin_notes = f"{original_notes}\n{diag_info}".strip()
+                else:
+                    change_request.admin_notes = original_notes
+                
+                change_request.save()
+
+            # Notify HOD
             Notification.objects.create(
                 recipient=change_request.requested_by,
-                title="Faculty Change Request Approved",
-                message=f"Your {change_request.change_type} request for {change_request.target_model} {change_request.target_id or '(New)'} has been approved. {f'Notes: {change_request.admin_notes}' if change_request.admin_notes else ''}"
+                title="Faculty Swap Approved",
+                message=f"Swap approved for {change_request.proposed_data.get('course_id')} in {change_request.proposed_data.get('section_id')}. {change_request.admin_notes}"
             )
             
             serializer = self.get_serializer(change_request)
             return Response(serializer.data)
+
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to apply changes: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         except Exception as e:
             return Response(

@@ -218,6 +218,7 @@ def get_timetable_view(request):
             'is_lab_session': entry.is_lab_session,
             'start_time': entry.timeslot.start_time.strftime('%H:%M'),
             'end_time': entry.timeslot.end_time.strftime('%H:%M'),
+            'timeslot_id': entry.timeslot_id,
             'last_modified': entry.last_modified.isoformat(),
         })
     
@@ -287,6 +288,7 @@ def get_my_schedule(request):
             'is_lab_session': entry.is_lab_session,
             'start_time': entry.timeslot.start_time.strftime('%H:%M'),
             'end_time': entry.timeslot.end_time.strftime('%H:%M'),
+            'timeslot_id': entry.timeslot_id,
         })
     
     return Response({

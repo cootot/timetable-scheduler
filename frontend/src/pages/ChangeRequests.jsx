@@ -90,6 +90,7 @@ function ChangeRequests() {
             case 'CREATE': return 'badge-success';
             case 'UPDATE': return 'badge-warning';
             case 'DELETE': return 'badge-danger';
+            case 'SWAP': return 'badge-info';
             default: return 'badge-secondary';
         }
     };
@@ -161,8 +162,18 @@ function ChangeRequests() {
                                             </span>
                                         </td>
                                         <td style={{ padding: '12px' }}>
-                                            {req.target_model}
-                                            {req.target_id && <><br /><small>{req.target_id}</small></>}
+                                            {req.change_type === 'SWAP' ? (
+                                                <>
+                                                    <strong>{req.proposed_data?.course_id}</strong>
+                                                    <br />
+                                                    <small>Section: {req.proposed_data?.section_id}</small>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    {req.target_model}
+                                                    {req.target_id && <><br /><small>{req.target_id}</small></>}
+                                                </>
+                                            )}
                                         </td>
                                         <td style={{ padding: '12px' }}>
                                             <span className={`badge ${getStatusBadge(req.status)}`}>
