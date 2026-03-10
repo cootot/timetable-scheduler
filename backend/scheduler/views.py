@@ -238,12 +238,14 @@ def get_timetable_view(request):
             'is_lab_session': entry.is_lab_session,
             'is_adm': entry.course.is_adm,
             'is_elective': entry.course.is_elective,
+            'year': entry.course.year,
             'session_type': entry.session_type,
             'elective_group': entry.course.elective_group,
             'elective_type': entry.course.elective_type,
             'start_time': entry.timeslot.start_time.strftime('%H:%M'),
             'end_time': entry.timeslot.end_time.strftime('%H:%M'),
             'timeslot_id': entry.timeslot_id,
+            'constraint_reason': entry.constraint_reason,
             'last_modified': entry.last_modified.isoformat(),
         })
     
@@ -313,11 +315,13 @@ def get_my_schedule(request):
             'is_lab_session': entry.is_lab_session,
             'is_adm': entry.course.is_adm,
             'is_elective': entry.course.is_elective,
+            'year': entry.course.year,
             'session_type': entry.session_type,
             'elective_group': entry.course.elective_group,
             'elective_type': entry.course.elective_type,
             'start_time': entry.timeslot.start_time.strftime('%H:%M'),
             'end_time': entry.timeslot.end_time.strftime('%H:%M'),
+            'constraint_reason': entry.constraint_reason,
             'timeslot_id': entry.timeslot_id,
         })
     

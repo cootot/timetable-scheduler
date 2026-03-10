@@ -372,7 +372,10 @@ function ViewTimetable() {
                     const isProject = c.course_name?.toLowerCase().includes('project phase');
                     const label = (c.is_elective && c.elective_group) ? `[${c.elective_group}]` : c.course_code;
 
-                    let text = `${label}\n${c.course_name}`;
+                    const displayName = (c.year === 4 && c.is_elective && c.constraint_reason)
+                        ? c.constraint_reason
+                        : c.course_name;
+                    let text = `${label}\n${displayName}`;
 
                     // Only add Room/Section for non-electives/non-projects
                     if (!c.is_elective && !isProject) {
@@ -382,7 +385,7 @@ function ViewTimetable() {
                         text += `\n(${c.section})`;
                     }
 
-                    if (c.is_lab_session && !isProject) text += ' [LAB]';
+                    if (c.is_lab_session && !isProject && c.year !== 4) text += ' [LAB]';
                     if (isProject) text += ' [PROJECT]';
                     return text;
                 }).join('\n\n');
@@ -1073,8 +1076,8 @@ function ViewTimetable() {
                                                                     ⠿
                                                                 </div>
                                                             )}
-                                                            {/* LAB Badge */}
-                                                            {classItem.is_lab_session && !isProject && (
+                                                            {/* LAB Badge - Hide for Projects and Year 4 Electives */}
+                                                            {classItem.is_lab_session && !isProject && classItem.year !== 4 && (
                                                                 <div style={{
                                                                     position: 'absolute',
                                                                     top: '8px',
@@ -1100,7 +1103,9 @@ function ViewTimetable() {
                                                                         : classItem.course_code}
                                                                 </div>
                                                                 <div className="class-name" style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.9, lineHeight: '1.2' }}>
-                                                                    {classItem.course_name}
+                                                                    {classItem.year === 4 && classItem.is_elective && classItem.constraint_reason
+                                                                        ? classItem.constraint_reason
+                                                                        : classItem.course_name}
                                                                 </div>
 
                                                                 {/* Hide Faculty and Room for Electives and Projects */}

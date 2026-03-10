@@ -166,7 +166,8 @@ class TimetableScheduler:
                         schedule=self.schedule, section=e['section'],
                         course=e['course'], teacher=e['teacher'],
                         room=e['room'], timeslot=e['timeslot'],
-                        is_lab_session=e['is_lab'], session_type=e['session_type']
+                        is_lab_session=e['is_lab'], session_type=e['session_type'],
+                        constraint_reason=e.get('constraint_reason')
                     ) for e in self.entries
                 ]
                 ScheduleEntry.objects.bulk_create(entries_to_create)
@@ -268,7 +269,13 @@ class TimetableScheduler:
                         
                         if m:
                             current_course = m.course if m.course.is_elective else placeholder
-                            sub_tasks.append({'course': current_course, 'teacher': m.teacher, 'sections': [sec], 'session_type': session['session_type']})
+                            sub_tasks.append({
+                                'course': current_course, 
+                                'teacher': m.teacher, 
+                                'sections': [sec], 
+                                'session_type': session['session_type'],
+                                'display_name': placeholder.course_name
+                            })
                             task_busy_teachers.add(m.teacher)
                         else:
                             # Fallback: distribute available teachers across placeholders too
@@ -278,7 +285,8 @@ class TimetableScheduler:
                                 t = available_teachers[t_idx]
                                 sub_tasks.append({
                                     'course': placeholder, 'teacher': t,
-                                    'sections': [sec], 'session_type': session['session_type']
+                                    'sections': [sec], 'session_type': session['session_type'],
+                                    'display_name': placeholder.course_name
                                 })
                                 task_busy_teachers.add(t)
                     
@@ -481,7 +489,17 @@ class TimetableScheduler:
             teacher = sub['teacher']
             room = sub['selected_room']
             for sec in sub['sections']:
-                ent = {'section': sec, 'course': sub['course'], 'teacher': teacher, 'room': room, 'timeslot': ts, 'is_lab': (sub['course'].practicals > 0), 'session_type': sub['session_type']}
+                # Suppress LAB tag for Year 4 Electives
+                is_lab = (sub['course'].practicals > 0)
+                if sec.year == 4 and sub.get('session_type') in ['PE', 'FE', 'PRACTICAL']:
+                    is_lab = False
+                    
+                ent = {
+                    'section': sec, 'course': sub['course'], 'teacher': teacher, 
+                    'room': room, 'timeslot': ts, 'is_lab': is_lab, 
+                    'session_type': sub['session_type'],
+                    'constraint_reason': sub.get('display_name')
+                }
                 self.entries.append(ent)
                 added.append(ent)
                 self.section_busy[(sec.class_id, ts.day, ts.slot_number)] = True
