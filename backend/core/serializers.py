@@ -278,6 +278,10 @@ class ScheduleSerializer(serializers.ModelSerializer):
             "total_conflicts",
         ]
         read_only_fields = ["schedule_id", "created_at", "completed_at"]
+        extra_kwargs = {
+            "year": {"required": False, "allow_null": True},
+            "name": {"required": False},
+        }
 
     def get_total_entries(self, obj):
         """Get total number of schedule entries"""
@@ -286,6 +290,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
     def get_total_conflicts(self, obj):
         """Get total number of unresolved conflicts"""
         return obj.conflicts.filter(resolved=False).count()
+
 
 
 class ScheduleEntrySerializer(serializers.ModelSerializer):

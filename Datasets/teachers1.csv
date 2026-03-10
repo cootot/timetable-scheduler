@@ -1,0 +1,44 @@
+teacher_id,teacher_name,email,department,max_hours_per_week
+T001,Aarthi R,t001@mail.com,CSE,16
+T002,Abirami K,t002@mail.com,CSE,16
+T003,Anantha Narayanan V,t003@mail.com,CSE,18
+T004,Anbazhagan M,t004@mail.com,CSE,17
+T005,Anisha Radhakrishnan,t005@mail.com,CSE,15
+T006,Anupa Vijay,t006@mail.com,CSE,15
+T007,Archana Devi R,t007@mail.com,CSE,15
+T008,Archana R,t008@mail.com,CSE,17
+T009,Arunkumar C,t009@mail.com,CSE,15
+T010,Aswathi T,t010@mail.com,CSE,17
+T011,Bagavathi Sivakumar P,t011@mail.com,CSE,16
+T012,Bagyammal T,t012@mail.com,CSE,18
+T013,Baskar A,t013@mail.com,CSE,15
+T014,Bharathi D,t014@mail.com,CSE,17
+T015,Bindu K R,t015@mail.com,CSE,16
+T016,C.Shunmuga Velayutham,t016@mail.com,CSE,17
+T017,Dayanand V,t017@mail.com,CSE,16
+T018,Deepika T,t018@mail.com,CSE,15
+T019,Dhanya M Dhanalakshmy,t019@mail.com,CSE,17
+T020,Dhanya N M,t020@mail.com,CSE,15
+T021,Divya M,t021@mail.com,CSE,17
+T022,C.Bagavathi,t022@mail.com,CSE,18
+T023,Ganesh Neelakanta Iyer,t023@mail.com,CSE,16
+T024,KARTHI R,t024@mail.com,CSE,15
+T025,Krishan Kumar,t025@mail.com,CSE,18
+T026,PRIYANKA KUMAR,t026@mail.com,CSE,17
+T027,SABARINATH SUBRAMANIAM,t027@mail.com,CSE,16
+T028,Gangadharan K,t028@mail.com,CSE,15
+T029,Gayathri V,t029@mail.com,CSE,15
+T030,Geethu Mohan,t030@mail.com,CSE,16
+T031,Govindarajan J,t031@mail.com,CSE,17
+T032,Harini N,t032@mail.com,CSE,16
+T033,Hema P Menon,t033@mail.com,CSE,17
+T034,Jevitha K P,t034@mail.com,CSE,16
+T035,Jeyakumar G,t035@mail.com,CSE,18
+T036,Kamalaveni V,t036@mail.com,CSE,15
+T037,Lalithamani N,t037@mail.com,CSE,15
+T038,Latha Parameswaran,t038@mail.com,CSE,17
+T039,Malathi P,t039@mail.com,CSE,18
+T040,Manjusha R,t040@mail.com,CSE,18
+T041,Manu Madhavan,t041@mail.com,CSE,17
+T042,Venkadeshan R,t042@mail.com,CSE,17
+T043,Lavanya G,t043@mail.com,CSE,17

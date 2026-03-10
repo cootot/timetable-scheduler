@@ -1,0 +1,166 @@
+course_id,course_name,year,semester,lectures,theory,practicals,credits,is_lab,is_elective,weekly_slots,elective_group,is_schedulable
+23ENG101,Technical Communication,1,odd,2,0,3,3,0,0,5,NA,1
+23MAT107,Calculus,1,odd,3,0,2,4,1,0,5,NA,1
+23CSE101,Computational Problem Solving,1,odd,3,0,2,4,1,0,5,NA,1
+23EEE104,Introduction to Electrical and Electronics Engineering,1,odd,3,0,0,3,0,0,3,NA,1
+23EEE184,Basic Electrical and Electronics Engineering Practice,1,odd,0,0,2,1,1,0,2,NA,1
+23CSE102,Computer Hardware Essentials,1,odd,1,0,2,2,1,0,3,NA,1
+22ADM101,Foundations of Indian Heritage,1,odd,2,0,1,2,0,0,3,NA,1
+22AVP103,Mastery Over Mind,1,odd,1,0,2,2,0,0,3,NA,1
+23MAT116,Discrete Mathematics,1,even,3,0,2,4,1,0,5,NA,1
+23MAT117,Linear Algebra,1,even,3,0,2,4,1,0,5,NA,1
+23CSE111,Object Oriented Programming,1,even,3,0,2,4,1,0,5,NA,1
+23PHY115,Modern Physics,1,even,2,1,0,3,0,0,3,NA,1
+23CSE113,User Interface Design,1,even,2,0,2,3,1,0,4,NA,1
+23MEE115,Manufacturing Practice,1,even,0,0,3,1,1,0,3,NA,1
+22ADM111,Glimpses of Glorious India,1,even,2,0,1,2,0,0,3,NA,1
+23MAT206,Optimization Techniques,2,odd,3,0,2,4,1,0,5,NA,1
+23CSE205,Digital Electronics,2,odd,3,0,0,3,0,0,3,NA,1
+23CSE201,Procedural Programming using C,2,odd,3,0,2,4,1,0,5,NA,1
+23CSE202,Database Management Systems,2,odd,3,0,2,4,1,0,5,NA,1
+23CSE203,Data Structures and Algorithms,2,odd,3,1,2,5,1,0,6,NA,1
+23CSE285,Digital Electronics Laboratory,2,odd,0,0,3,1,1,0,3,NA,1
+23LSE201,Life Skills for Engineers I,2,odd,1,0,2,2,0,0,3,NA,1
+AVP1,Amrita Value Programme I,2,odd,1,0,0,1,0,1,1,AVP_SEM3,1
+23MAT216,Probability and Random Processes,2,even,3,0,2,4,1,0,5,NA,1
+23CSE211,Design and Analysis of Algorithms,2,even,3,0,2,4,1,0,5,NA,1
+23CSE212,Principles of Functional Languages,2,even,2,0,2,3,1,0,4,NA,1
+23CSE213,Computer Organization and Architecture,2,even,3,1,0,4,0,0,4,NA,1
+23CSE214,Operating Systems,2,even,3,0,2,4,1,0,5,NA,1
+AVP2,Amrita Value Programme II,2,even,1,0,0,1,0,1,1,AVP_SEM4,1
+FREE1,Free Elective I,2,even,2,0,0,2,0,1,2,FREE_SEM4,1
+23LSE211,Life Skills for Engineers II,2,even,1,0,2,2,0,0,3,NA,1
+23CSE301,Machine Learning,3,odd,3,0,2,4,1,0,5,NA,1
+23CSE302,Computer Networks,3,odd,3,1,2,5,1,0,6,NA,1
+23CSE303,Theory of Computation,3,odd,3,1,0,4,0,0,4,NA,1
+23CSE304,Embedded Systems,3,odd,3,0,2,4,1,0,5,NA,1
+PE1,Professional Elective I,3,odd,3,0,0,3,0,1,3,PE_SEM5,1
+PE2,Professional Elective II,3,odd,3,0,0,3,0,1,3,PE_SEM5,1
+23LSE301,Life Skills for Engineers III,3,odd,1,0,2,2,0,0,3,NA,1
+23ENV300,Environmental Science,3,odd,1,0,0,1,0,0,1,NA,1
+23CSE311,Software Engineering,3,even,3,0,2,4,1,0,5,NA,1
+23CSE312,Distributed Systems,3,even,3,0,2,4,1,0,5,NA,1
+23CSE313,Foundations of Cyber Security,3,even,3,0,0,3,0,0,3,NA,1
+23CSE314,Compiler Design,3,even,3,0,2,4,1,0,5,NA,1
+PE3,Professional Elective III,3,even,3,0,0,3,0,1,3,PE_SEM6,1
+23CSE399,Project Phase I,3,even,0,0,6,3,1,0,6,NA,1
+23LSE311,Life Skills for Engineers IV,3,even,1,0,2,2,0,0,3,NA,1
+PE4,Professional Elective IV,4,even,3,0,0,3,0,1,3,PE_SEM7,1
+PE5,Professional Elective V,4,even,3,0,0,3,0,1,3,PE_SEM7,1
+PE6,Professional Elective VI,4,even,3,0,0,3,0,1,3,PE_SEM7,1
+FREE2,Free Elective II,4,even,2,0,0,2,0,1,2,FREE_SEM7,1
+23CSE401,Fundamentals of Artificial Intelligence,4,even,2,0,2,3,1,0,4,NA,1
+23CSE498,Project Phase II,4,even,0,0,12,6,1,0,12,NA,1
+23LAW300,Indian Constitution,4,even,1,0,0,1,0,0,1,NA,1
+23CSE499,Project Phase III,4,even,0,0,12,6,1,0,12,NA,1
+22ADM201,Strategic Lessons from Mahabharatha,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22ADM211,Leadership from Ramayana,2,even,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP210,Kerala Mural Art and Painting,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP218,Yoga Therapy and Lessons,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP212,Introduction to Traditional Indian Systems of Medicine,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP201,Amma’s Life and Message to the Modern World,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP204,Lessons from the Upanishads,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP205,Message of the Bhagavad Gita,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP206,Life and Message of Swami Vivekananda,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP207,Spiritual Masters of India,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP208,Insights into Indian Arts and Literature,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP213,Traditional Fine Arts of India,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP214,Principles of Worship in India,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP215,Temple Mural Arts in Kerala,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP219,Traditional Indian Painting,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP220,Indian Classical Dance,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP221,Indian Martial Arts and Self Defense,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+22AVP209,Yoga and Meditation,2,odd,2,0,0,2,0,1,2,AVP_SEM3,0
+HUM23CUL230,Achieving Excellence in Life - An Indian Perspective,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CUL231,Excellence in Daily Life,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CUL232,Exploring Science and Technology in Ancient India,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CUL233,Yoga Psychology,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23ENG230,Business Communication,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23ENG231,Indian Thought through English,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23ENG232,Insights into Life through English Literature,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23ENG233,Technical Communication,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23ENG234,Indian Short Stories in English,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23FRE230,French Language (Lower),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23FRE231,French Language (Higher),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER230,German for Beginners I,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER231,German for Beginners II,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER232,German Language (Lower),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER233,German Language (Higher),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23HIN230,Hindi I,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23HIN231,Hindi II,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23HUM230,Emotional Intelligence,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23HUM239,Psychology for Effective Living,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23HUM244,Science of Food and Nutrition,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23SWK230,Corporate Social Responsibility,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23SWK231,Workplace Mental Health,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23TAM230,Tamil I,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23TAM231,Tamil II,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23MNG331,Financial Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MNG332,Supply Chain Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MNG333,Marketing Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MNG334,Project Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MNG335,Enterprise Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MNG336,Operations Research,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MEE321,Industrial Engineering,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MEE322,Managerial Statistics,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MEE323,Total Quality Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23MEE324,Lean Manufacturing,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CSE321,Software Project Management,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CSE322,Financial Engineering,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CSE323,Engineering Economic Analysis,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+HUM23CSE324,Information Systems,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
+23CSE451,Graph Mining,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE452,Business Analytics,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE453,Competitive Programming,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE454,Concurrent Programming,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE455,Design Patterns,3,odd,3,0,0,3,0,1,3,PE_SEM5,0
+23CSE456,Domain Specific Languages,3,odd,3,0,0,3,0,1,3,PE_SEM5,0
+23CSE457,Elements of Computing,3,odd,3,0,0,3,0,1,3,PE_SEM5,0
+23CSE458,Embedded Programming,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE459,Fault Tolerant Computing Systems,3,odd,3,0,0,3,0,1,3,PE_SEM5,0
+23CSE460,Features in Modern Programming Languages,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE461,Full Stack Frameworks,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE462,Multimedia Communication Systems,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE463,Quantum Computing,3,odd,3,0,0,3,0,1,3,PE_SEM5,0
+23CSE464,Formal Verification,3,odd,3,0,0,3,0,1,3,PE_SEM5,0
+23CSE465,Mobile Application Development,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE466,Parallel Programming,3,odd,2,0,2,3,1,1,4,PE_SEM5,0
+23CSE331,Cryptography,3,even,3,0,0,3,0,1,3,PE_SEM6,0
+23CSE332,Information Security,3,even,3,0,0,3,0,1,3,PE_SEM6,0
+23CSE333,Secure Coding,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE334,Cyber Forensics and Malware,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE335,Blockchain and its Applications,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE336,Secure Networks,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE341,Wireless Sensor Networks,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE342,Advanced Computer Networks,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE343,Wireless and Mobile Networks,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE344,Modern Cellular Wireless Networks,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE345,Software Defined Networks,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE351,Foundations of Data Science,3,even,3,0,0,3,0,1,3,PE_SEM6,0
+23CSE352,Big Data Analytics,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE353,Data Visualization,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE354,DBMS for Data Science,3,even,2,0,2,3,1,1,4,PE_SEM6,0
+23CSE355,Mining of Massive Datasets,3,even,3,0,0,3,0,1,3,PE_SEM6,0
+23CSE356,Social Network Analytics,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE357,Time Series Analysis and Forecasting,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE361,Real Time OS for Cyber Physical Systems,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE362,Edge Computing,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE363,Cloud Computing,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE364,Cyber Physical Systems,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE365,Internet of Things,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE371,Digital Image Processing,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE372,Computer Graphics and Animation,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE373,Computer Vision,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE374,Video Analysis,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE375,Augmented and Virtual Reality,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE470,Semantic Web,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE471,Natural Language Processing,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE472,Artificial Intelligence and Robotics,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE473,Neural Networks and Deep Learning,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE474,Computational Intelligence,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE475,Generative AI,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE476,Conversational AI,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE477,Reinforcement Learning,4,even,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE478,Drones and Robotics,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE479,Machine Learning with Graphs,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE480,AI for Industrial Decision Making,4,even,3,0,0,3,0,1,3,PE_SEM7,0

@@ -256,8 +256,14 @@ class Course(models.Model):
     is_elective = models.BooleanField(default=False)
     # Categorization of electric type (e.g., "Professional Elective I")
     elective_type = models.CharField(max_length=100, null=True, blank=True)
+    # The grouping logic for electives (e.g., PE_SEM5, FREE_SEM4) to schedule them together
+    elective_group = models.CharField(max_length=50, null=True, blank=True)
+    # Flag to determine if this course should be actively scheduled (vs AVP/CIR courses that might not be)
+    is_schedulable = models.BooleanField(default=True)
     # Flag indicating if this is a project-based course
     is_project = models.BooleanField(default=False)
+    # Flag indicating if this is an ADM (Administrative) course
+    is_adm = models.BooleanField(default=False)
     # Total weekly slots required for this course (usually lectures + theory + practicals)
     weekly_slots = models.IntegerField(validators=[MinValueValidator(0)])
     
@@ -407,6 +413,8 @@ class TeacherCourseMapping(models.Model):
         null=True, blank=True,
         help_text="Domain number from mappingop/mappingep (e.g. 1=Cyber Security)",
     )
+    # The new section_group from elective_allocations indicating which grouped section (A/B/etc) this is
+    section_group = models.CharField(max_length=10, null=True, blank=True)
     # Human-readable domain name for electives
     domain_name = models.CharField(
         max_length=100, null=True, blank=True,
@@ -499,6 +507,17 @@ class ScheduleEntry(models.Model):
     
     # Flag to differentiate theory hours vs practicals (often requires multiple contiguous slots)
     is_lab_session = models.BooleanField(default=False)
+    
+    # Detailed session type for color coding and refinement
+    SESSION_TYPES = [
+        ('LECTURE', 'Core Lecture'),
+        ('TUTORIAL', 'Core Tutorial'),
+        ('PRACTICAL', 'Practical/Lab'),
+        ('ADM', 'Administrative'),
+        ('PE', 'Professional Elective'),
+        ('FE', 'Free Elective'),
+    ]
+    session_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='LECTURE')
     # AI rationale text explaining why this specific placement occurred
     constraint_reason = models.CharField(
         max_length=300,
@@ -514,9 +533,9 @@ class ScheduleEntry(models.Model):
 
     class Meta:
         db_table = "schedule_entries"
-        # Core physics constraint: A given group of students cannot be in two places at the exact same time
+        # Allow multiple courses in the same slot for parallel electives
         unique_together = [
-            ["schedule", "section", "timeslot"],
+            ["schedule", "section", "course", "teacher", "timeslot"],
         ]
     
     def __str__(self):

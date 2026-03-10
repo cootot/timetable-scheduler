@@ -16,6 +16,7 @@ import { scheduleAPI, schedulerAPI, sectionAPI, teacherAPI, courseAPI, roomAPI, 
 import { useAuth } from '../context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import ElectiveMappingModal from '../components/ElectiveMappingModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,7 @@ function ViewTimetable() {
     // ── Verification modal ──
     const [verificationResult, setVerificationResult] = useState(null);
     const [showVerificationModal, setShowVerificationModal] = useState(false);
+    const [showElectiveModal, setShowElectiveModal] = useState(false);
     const [verifying, setVerifying] = useState(false);
 
     // ── Publish state ──
@@ -784,6 +786,13 @@ function ViewTimetable() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                             <button
                                 className="btn btn-primary"
+                                onClick={() => setShowElectiveModal(true)}
+                                style={{ fontSize: '0.875rem', padding: '0.25rem 0.5rem', backgroundColor: '#eab308', borderColor: '#eab308' }}
+                            >
+                                ✨ View Elective Handlers
+                            </button>
+                            <button
+                                className="btn btn-primary"
                                 onClick={handleDownloadPDF}
                                 style={{ fontSize: '0.875rem', padding: '0.25rem 0.5rem' }}
                             >
@@ -833,6 +842,8 @@ function ViewTimetable() {
                         {/* Time Slots */}
                         {SLOTS.map((slot) => (
                             <React.Fragment key={`slot-row-${slot}`}>
+                                {/* Breaks removed entirely from UI as requested */}
+
                                 <div key={`time-${slot}`} className="grid-time">
                                     <div style={{ fontWeight: 700, color: 'var(--primary)' }}>Slot {slot}</div>
                                     <div style={{ fontSize: '0.65rem', opacity: 0.7 }}>
@@ -909,71 +920,113 @@ function ViewTimetable() {
                                             )}
 
                                             {/* Class blocks */}
-                                            {(timetable[day]?.[slot] || []).map((classItem, idx) => {
-                                                const isDraggingThis = dragging?.entryId === classItem.entry_id;
-                                                return (
-                                                    <div
-                                                        key={idx}
-                                                        className={`class-block ${classItem.is_lab_session ? 'lab' : 'theory'} ${classItem.teacher_id === (user?.teacher_id || selectedTeacher) ? 'highlight-teacher' : ''}`}
-                                                        draggable={isAdminOrHOD && !!classItem.entry_id}
-                                                        onDragStart={(e) => handleDragStart(e, classItem, day, slot)}
-                                                        onDragEnd={handleDragEnd}
-                                                        style={{
-                                                            cursor: isAdminOrHOD ? 'grab' : 'default',
-                                                            opacity: isDraggingThis ? 0.35 : 1,
-                                                            transition: 'opacity 0.2s ease, transform 0.2s ease',
-                                                            transform: isDraggingThis ? 'scale(0.95)' : undefined,
-                                                        }}
-                                                        title={
-                                                            isAdminOrHOD
-                                                                ? `Drag to move ${classItem.course_code} (${classItem.section})`
-                                                                : undefined
-                                                        }
-                                                    >
-                                                        {/* Drag handle icon */}
-                                                        {isAdminOrHOD && (
-                                                            <div style={{
-                                                                fontSize: '0.6rem',
-                                                                color: 'var(--text-muted)',
-                                                                marginBottom: '2px',
-                                                                letterSpacing: '1px',
-                                                                userSelect: 'none',
-                                                            }}>
-                                                                ⠿
-                                                            </div>
-                                                        )}
-                                                        <div className="class-code">
-                                                            {classItem.course_code}
-                                                            {classItem.is_lab_session && <span className="lab-badge">LAB</span>}
-                                                        </div>
-                                                        <div className="class-teacher">{classItem.teacher_name}</div>
-                                                        <div className="class-room">Room: {classItem.room}</div>
-                                                        <div className="class-room">Sec: {classItem.section}</div>
+                                            {(() => {
+                                                const items = timetable[day]?.[slot] || [];
+                                                const groupedItems = [];
+                                                const electiveGroupsSeen = new Set();
 
-                                                        {isAdminOrHOD && (
-                                                            <button
-                                                                className="btn btn-primary"
-                                                                style={{
-                                                                    fontSize: '0.7rem',
-                                                                    padding: '4px 8px',
-                                                                    marginTop: '8px',
-                                                                    width: '100%',
-                                                                    background: 'var(--primary)',
-                                                                    color: '#fff',
-                                                                    fontWeight: 'bold',
-                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                                }}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleOpenSwapModal(classItem);
-                                                                }}
-                                                            >
-                                                                🔄 Swap Faculty
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
+                                                items.forEach(item => {
+                                                    if (item.is_elective && item.elective_group) {
+                                                        if (!electiveGroupsSeen.has(item.elective_group)) {
+                                                            electiveGroupsSeen.add(item.elective_group);
+                                                            groupedItems.push({
+                                                                ...item,
+                                                                is_group_header: true,
+                                                                // Use the elective type (PE 1, FE II) as the primary label
+                                                                course_code: item.elective_type || item.elective_group,
+                                                                teacher_name: 'Multiple Faculty',
+                                                                room: 'Various Rooms'
+                                                            });
+                                                        }
+                                                    } else {
+                                                        groupedItems.push(item);
+                                                    }
+                                                });
+
+                                                return groupedItems.map((classItem, idx) => {
+                                                    const isDraggingThis = dragging?.entryId === classItem.entry_id;
+
+                                                    // VC-1 Mapping
+                                                    const sessionTypeClass = classItem.session_type?.toLowerCase() || 'theory';
+                                                    const isTeacherHighlight = classItem.teacher_id === (user?.teacher_id || selectedTeacher);
+
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className={`class-block ${sessionTypeClass} ${isTeacherHighlight ? 'highlight-teacher' : ''}`}
+                                                            draggable={isAdminOrHOD && !!classItem.entry_id}
+                                                            onDragStart={(e) => handleDragStart(e, classItem, day, slot)}
+                                                            onDragEnd={handleDragEnd}
+                                                            style={{
+                                                                cursor: isAdminOrHOD ? 'grab' : 'default',
+                                                                opacity: isDraggingThis ? 0.35 : 1,
+                                                                transition: 'opacity 0.2s ease, transform 0.2s ease',
+                                                                transform: isDraggingThis ? 'scale(0.95)' : undefined,
+                                                                padding: '10px',
+                                                                minHeight: classItem.is_lab_session ? '100%' : 'auto'
+                                                            }}
+                                                            title={
+                                                                isAdminOrHOD
+                                                                    ? `Drag to move ${classItem.course_code} (${classItem.section})`
+                                                                    : undefined
+                                                            }
+                                                        >
+                                                            {/* Drag handle icon */}
+                                                            {isAdminOrHOD && (
+                                                                <div style={{
+                                                                    fontSize: '0.6rem',
+                                                                    color: 'var(--text-muted)',
+                                                                    marginBottom: '4px',
+                                                                    letterSpacing: '1px',
+                                                                    userSelect: 'none',
+                                                                }}>
+                                                                    ⠿
+                                                                </div>
+                                                            )}
+                                                            <div className="class-content" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                                {/* VC-3 Display Format */}
+                                                                <div className="class-code" style={{ fontWeight: 800, fontSize: '0.85rem' }}>
+                                                                    {classItem.is_elective && classItem.elective_type
+                                                                        ? classItem.elective_type
+                                                                        : classItem.course_code}
+                                                                </div>
+                                                                <div className="class-name" style={{ fontSize: '0.7rem', fontWeight: 600, opacity: 0.9, lineHeight: '1.2' }}>
+                                                                    {classItem.course_name}
+                                                                </div>
+                                                                <div className="class-teacher" style={{ fontSize: '0.65rem', marginTop: '2px' }}>
+                                                                    {classItem.teacher_name}
+                                                                </div>
+                                                                <div className="class-room-sec" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', fontWeight: 700, marginTop: '4px' }}>
+                                                                    <span>Room: {classItem.room}</span>
+                                                                    {!classItem.is_elective && <span>Sec: {classItem.section}</span>}
+                                                                </div>
+                                                            </div>
+
+                                                            {isAdminOrHOD && (
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    style={{
+                                                                        fontSize: '0.6rem',
+                                                                        padding: '2px 6px',
+                                                                        marginTop: '8px',
+                                                                        width: '100%',
+                                                                        background: 'rgba(0,0,0,0.05)',
+                                                                        color: 'inherit',
+                                                                        border: '1px solid currentColor',
+                                                                        fontWeight: 'bold',
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleOpenSwapModal(classItem);
+                                                                    }}
+                                                                >
+                                                                    Swap Faculty
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })
+                                            })()}
                                         </div>
                                     );
                                 })}
@@ -1171,6 +1224,15 @@ function ViewTimetable() {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Elective Mapping Modal */}
+            {showElectiveModal && (
+                <ElectiveMappingModal
+                    isOpen={showElectiveModal}
+                    onClose={() => setShowElectiveModal(false)}
+                    scheduleId={selectedSchedule || ''}
+                />
             )}
         </div>
     );

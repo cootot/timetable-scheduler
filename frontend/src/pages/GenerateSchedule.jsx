@@ -22,10 +22,10 @@ function GenerateSchedule() {
                 const response = await schedulerAPI.getStatus(scheduleId);
                 const { status, quality_score } = response.data;
 
-                if (status === 'COMPLETED' || status === 'FAILED') {
+                if (status === 'COMPLETED' || status === 'FAILED' || status === 'PARTIAL') {
                     setResult({
                         ...response.data,
-                        message: status === 'COMPLETED'
+                        message: (status === 'COMPLETED' || status === 'PARTIAL')
                             ? 'Schedule generation finished successfully!'
                             : 'Schedule generation failed. Please check conflicts.'
                     });
@@ -65,7 +65,16 @@ function GenerateSchedule() {
             await pollStatus(scheduleId);
 
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to trigger schedule generation');
+            console.error('Generate error:', err.response);
+            const errData = err.response?.data;
+            // DRF can return errors as { error: "..." } or { field: ["msg"] }
+            let msg = 'Failed to trigger schedule generation';
+            if (errData) {
+                if (errData.error) msg = errData.error;
+                else if (typeof errData === 'string') msg = errData;
+                else msg = JSON.stringify(errData);
+            }
+            setError(msg);
             setGenerating(false);
         }
     };

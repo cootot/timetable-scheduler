@@ -24,17 +24,18 @@ from accounts.permissions import IsHODOrAdmin, IsFacultyOrAbove
 def trigger_generation(request):
     """
     Trigger schedule generation.
+    Tries Celery async first, falls back to synchronous execution if broker is unavailable.
     """
     name = request.data.get('name', 'Untitled Schedule')
     semester = request.data.get('semester')
-    year = request.data.get('year')
-    
+    year = request.data.get('year')  # Optional — None means all years
+
     if not semester:
         return Response(
             {"error": "semester is required"},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     # Create schedule object
     schedule = Schedule.objects.create(
         name=name,
@@ -42,16 +43,35 @@ def trigger_generation(request):
         year=year,
         status='PENDING'
     )
-    
-    # Generate schedule asynchronously (Celery)
-    generate_schedule_async.delay(schedule.schedule_id)
-    
+
+    # Try Celery async; fall back to synchronous on broker errors
+    try:
+        generate_schedule_async.delay(schedule.schedule_id)
+        async_mode = True
+    except Exception:
+        # Celery broker not available — run synchronously
+        from .algorithm import generate_schedule as run_sync
+        try:
+            run_sync(schedule.schedule_id)
+        except Exception as e:
+            schedule.status = 'FAILED'
+            schedule.save()
+            return Response(
+                {"error": f"Schedule generation failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        async_mode = False
+
     serializer = ScheduleSerializer(schedule)
-    
+
     return Response({
         "schedule_id": schedule.schedule_id,
         "status": schedule.status,
-        "message": "Schedule generation queued successfully and is processing in the background.",
+        "message": (
+            "Schedule generation queued successfully and is processing in the background."
+            if async_mode else
+            "Schedule generated synchronously (Celery not running)."
+        ),
         "data": serializer.data
     }, status=status.HTTP_202_ACCEPTED)
 
@@ -216,6 +236,11 @@ def get_timetable_view(request):
             'room': entry.room.room_id,
             'section': entry.section.class_id,
             'is_lab_session': entry.is_lab_session,
+            'is_adm': entry.course.is_adm,
+            'is_elective': entry.course.is_elective,
+            'session_type': entry.session_type,
+            'elective_group': entry.course.elective_group,
+            'elective_type': entry.course.elective_type,
             'start_time': entry.timeslot.start_time.strftime('%H:%M'),
             'end_time': entry.timeslot.end_time.strftime('%H:%M'),
             'timeslot_id': entry.timeslot_id,
@@ -286,6 +311,11 @@ def get_my_schedule(request):
             'room': entry.room.room_id,
             'section': entry.section.class_id,
             'is_lab_session': entry.is_lab_session,
+            'is_adm': entry.course.is_adm,
+            'is_elective': entry.course.is_elective,
+            'session_type': entry.session_type,
+            'elective_group': entry.course.elective_group,
+            'elective_type': entry.course.elective_type,
             'start_time': entry.timeslot.start_time.strftime('%H:%M'),
             'end_time': entry.timeslot.end_time.strftime('%H:%M'),
             'timeslot_id': entry.timeslot_id,

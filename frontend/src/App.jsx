@@ -14,7 +14,7 @@
  */
 
 // Import React Router components for handling navigation without reloading the page
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 
 // Import global CSS styles
 import './index.css';
@@ -33,6 +33,7 @@ import ChangeRequests from './pages/ChangeRequests';
 import TeacherRequests from './pages/TeacherRequests';
 import SystemHealth from './pages/SystemHealth';
 import Login from './pages/Login';
+import FacultyMapping from './pages/FacultyMapping';
 
 // ==========================================
 // IMPORT CONTEXT PROVIDERS & HOCs
@@ -132,6 +133,11 @@ const MainLayout = ({ children }) => {
                     System Health
                   </Link>
                 </li>
+                <li className="nav-item">
+                  <Link to="/faculty-mapping" className="nav-link">
+                    📋 Faculty Mapping
+                  </Link>
+                </li>
               </>
             )}
 
@@ -154,6 +160,11 @@ const MainLayout = ({ children }) => {
                 <li className="nav-item">
                   <Link to="/analytics" className="nav-link">
                     Analytics
+                  </Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/faculty-mapping" className="nav-link">
+                    📋 Faculty Mapping
                   </Link>
                 </li>
               </>
@@ -349,6 +360,13 @@ function App() {
               <Route path="/system-health" element={
                 <ProtectedRoute roles={['ADMIN']}>
                   <MainLayout><SystemHealth /></MainLayout>
+                </ProtectedRoute>
+              } />
+
+              {/* Faculty Mapping: Admin + HOD can access */}
+              <Route path="/faculty-mapping" element={
+                <ProtectedRoute roles={['ADMIN', 'HOD']}>
+                  <MainLayout><FacultyMapping /></MainLayout>
                 </ProtectedRoute>
               } />
 
