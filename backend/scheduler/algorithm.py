@@ -218,41 +218,52 @@ class TimetableScheduler:
         for g_name, courses in groups.items():
             year = courses[0].year
             
-            # Find the generic placeholder course (e.g. PE3)
+            t_type = TYPE_FE if "FREE" in g_name.upper() else TYPE_PE
+            s_type = 'FE' if t_type == TYPE_FE else 'PE'
+            
             placeholder = next((c for c in courses if c.course_id == c.elective_type or len(c.course_id) <= 5), courses[0])
-
-            e_type = placeholder.elective_type or "PE"
-            t_type = TYPE_PE if "Professional" in e_type or "PE" in e_type else TYPE_FE
-            s_type = 'PE' if t_type == TYPE_PE else 'FE'
             weekly_slots = max(c.weekly_slots for c in courses)
             if t_type == TYPE_PE:
                 weekly_slots = 3
             elif t_type == TYPE_FE:
                 weekly_slots = 2
             
-            # Collect all strictly required busy teachers for this group's slot
-            busy_teachers = set()
-            for c in courses:
-                mappings = TeacherCourseMapping.objects.filter(course=c).select_related('teacher')
-                for m in mappings:
-                    busy_teachers.add(m.teacher)
-                    
-            placeholder_teachers = [m.teacher for m in TeacherCourseMapping.objects.filter(course=placeholder)]
-            if not placeholder_teachers:
-                placeholder_teachers = list(busy_teachers) if busy_teachers else [self.teacher_assignments[list(self.teacher_assignments.keys())[0]]]
-
+            # Master map for this group
+            group_mappings = TeacherCourseMapping.objects.filter(course__in=courses).select_related('teacher', 'course', 'section')
+            
+            busy_teachers = set(m.teacher for m in group_mappings)
+            
             target_sections = [s for s in sections if s.year == year]
             if not target_sections: continue
             
             for _ in range(weekly_slots):
                 sub_tasks = []
-                for i, sec in enumerate(target_sections):
-                    sub_tasks.append({
-                        'course': placeholder, 
-                        'teacher': placeholder_teachers[i % len(placeholder_teachers)], 
-                        'sections': [sec], 
-                        'session_type': s_type
-                    })
+                for sec in target_sections:
+                    # 1. Look for mapping with exact section link
+                    m = next((m for m in group_mappings if m.section == sec), None)
+                    
+                    # 2. Look for mapping with section_group match (e.g. "A" in "CSE4A")
+                    if not m:
+                        m = next((m for m in group_mappings if m.section_group and m.section_group in sec.class_id.upper()), None)
+                    
+                    if m:
+                        sub_tasks.append({
+                            'course': m.course,
+                            'teacher': m.teacher,
+                            'sections': [sec],
+                            'session_type': s_type
+                        })
+                    else:
+                        # Fallback to placeholder if NO mapping found for this section
+                        # (Keep one teacher from the group as fallback)
+                        fallback_teacher = list(busy_teachers)[0] if busy_teachers else None
+                        if fallback_teacher:
+                            sub_tasks.append({
+                                'course': placeholder,
+                                'teacher': fallback_teacher,
+                                'sections': [sec],
+                                'session_type': s_type
+                            })
                 
                 if sub_tasks:
                     tasks.append({

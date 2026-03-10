@@ -135,7 +135,7 @@ const MainLayout = ({ children }) => {
                 </li>
                 <li className="nav-item">
                   <Link to="/faculty-mapping" className="nav-link">
-                    📋 Faculty Mapping
+                    Faculty Mapping
                   </Link>
                 </li>
               </>
@@ -164,7 +164,7 @@ const MainLayout = ({ children }) => {
                 </li>
                 <li className="nav-item">
                   <Link to="/faculty-mapping" className="nav-link">
-                    📋 Faculty Mapping
+                    Faculty Mapping
                   </Link>
                 </li>
               </>

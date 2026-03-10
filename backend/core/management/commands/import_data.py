@@ -114,12 +114,21 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR(f"Data inconsistency in {course_id}: weekly_slots={csv_weekly_slots} vs computed={computed_weekly_slots}. Rejecting record."))
                     continue
 
+                # Semester correction for Year 4:
+                # Semester 7 (PE_SEM7, FREE_SEM7) should be Odd.
+                # Project Phase II/III are usually Sem 8 (Even).
+                sem = row["semester"].strip().lower()
+                year_val = int(row["year"])
+                if year_val == 4:
+                    if (e_group and "SEM7" in e_group) or course_id in ["PE4", "PE5", "PE6", "FREE2"]:
+                        sem = "odd"
+                
                 Course.objects.update_or_create(
                     course_id=course_id,
                     defaults={
                         "course_name": row["course_name"].strip(),
-                        "year": int(row["year"]),
-                        "semester": row["semester"].strip().lower(),
+                        "year": year_val,
+                        "semester": sem,
                         "lectures": lectures,
                         "theory": theory, # used for tutorials
                         "practicals": practicals,

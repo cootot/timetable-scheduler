@@ -924,16 +924,22 @@ function ViewTimetable() {
                                                 const items = timetable[day]?.[slot] || [];
                                                 const groupedItems = [];
                                                 const electiveGroupsSeen = new Set();
-
+                                                const groupCounts = {};
                                                 items.forEach(item => {
                                                     if (item.is_elective && item.elective_group) {
+                                                        groupCounts[item.elective_group] = (groupCounts[item.elective_group] || 0) + 1;
+                                                    }
+                                                });
+
+                                                items.forEach(item => {
+                                                    if (item.is_elective && item.elective_group && groupCounts[item.elective_group] > 1) {
                                                         if (!electiveGroupsSeen.has(item.elective_group)) {
                                                             electiveGroupsSeen.add(item.elective_group);
                                                             groupedItems.push({
                                                                 ...item,
                                                                 is_group_header: true,
-                                                                // Use the elective type (PE 1, FE II) as the primary label
-                                                                course_code: item.elective_type || item.elective_group,
+                                                                course_code: item.elective_group,
+                                                                course_name: item.elective_type ? `${item.elective_type} Electives` : 'Elective Group',
                                                                 teacher_name: 'Multiple Faculty',
                                                                 room: 'Various Rooms'
                                                             });

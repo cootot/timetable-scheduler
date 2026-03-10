@@ -14,8 +14,8 @@ import React, { useState, useEffect } from 'react';
 import { teacherAPI, courseAPI } from '../services/api';
 
 const ELECTIVE_COLORS = {
-    PE: { bg: '#fffbeb', border: '#f59e0b', text: '#78350f', badge: 'pe-badge' },
-    FREE: { bg: '#ecfdf5', border: '#10b981', text: '#064e3b', badge: 'fe-badge' },
+    PE: { bg: '#fce7f3', border: '#f472b6', text: '#be185d', badge: 'pe-badge' }, // Pink
+    FREE: { bg: '#fef9c3', border: '#facc15', text: '#a16207', badge: 'fe-badge' }, // Yellow
 };
 
 function getElectiveStyle(elective_group) {
@@ -397,9 +397,9 @@ export default function FacultyMapping() {
                                     {Object.entries(electiveGroups).map(([groupName, groupCourses]) => {
                                         const isPE = groupName.includes('PE_');
                                         const isFE = groupName.includes('FREE_');
-                                        const borderColor = isPE ? '#f59e0b' : isFE ? '#10b981' : 'var(--primary)';
-                                        const headerBg = isPE ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-                                            : isFE ? 'linear-gradient(135deg, #10b981, #059669)'
+                                        const borderColor = isPE ? '#f472b6' : isFE ? '#eab308' : 'var(--primary)';
+                                        const headerBg = isPE ? 'linear-gradient(135deg, #f472b6, #db2777)'
+                                            : isFE ? 'linear-gradient(135deg, #facc15, #ca8a04)'
                                                 : 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
 
                                         return (
