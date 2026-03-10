@@ -80,6 +80,7 @@ class TimetableScheduler:
         self.section_busy = {}   
         self.rooms_by_type = {'CLASSROOM': [], 'LAB': []}
         self.section_day_counts = {} # (section_id, day) -> count
+        self.teacher_day_counts = {} # (teacher_id, day) -> count
         self.iterations = 0
         self.MAX_ITERATIONS = 1000000
 
@@ -129,10 +130,14 @@ class TimetableScheduler:
                     # Sort days dynamically to balance class load per section across the week
                     def get_day_load(d):
                         cnt = 0
-                        if 'sections' in task and task['sections']:
-                            for s in task['sections']:
-                                # count slots used by this section on day d
-                                cnt += sum(1 for (sid, day, slot), busy in self.section_busy.items() if busy and sid == s.class_id and day == d)
+                        task_secs = set(task.get('sections', []))
+                        if task.get('sub_tasks'):
+                            for st in task['sub_tasks']:
+                                task_secs.update(st.get('sections', []))
+                        
+                        for s in task_secs:
+                            # count slots used by this section on day d
+                            cnt += sum(1 for (sid, day, slot), busy in self.section_busy.items() if busy and sid == s.class_id and day == d)
                         return cnt
                     
                     days.sort(key=get_day_load)
@@ -189,20 +194,15 @@ class TimetableScheduler:
             course = Course.objects.get(course_id=course_id)
             section = Section.objects.get(class_id=section_id)
             
+            if "Project Phase" in course.course_name:
+                continue # Handled synchronously at the end
+
             if course.practicals > 0:
-                if "Project Phase" in course.course_name:
-                    for _ in range(course.practicals):
-                        tasks.append({
-                            'type': TYPE_PRACTICAL, 'course': course, 'sections': [section],
-                            'teacher': teacher, 'block_size': 1,
-                            'priority': PRIORITY[TYPE_PRACTICAL], 'session_type': 'PRACTICAL'
-                        })
-                else:
-                    tasks.append({
-                        'type': TYPE_PRACTICAL, 'course': course, 'sections': [section],
-                        'teacher': teacher, 'block_size': course.practicals,
-                        'priority': PRIORITY[TYPE_PRACTICAL], 'session_type': 'PRACTICAL'
-                    })
+                tasks.append({
+                    'type': TYPE_PRACTICAL, 'course': course, 'sections': [section],
+                    'teacher': teacher, 'block_size': course.practicals,
+                    'priority': PRIORITY[TYPE_PRACTICAL], 'session_type': 'PRACTICAL'
+                })
 
             for i in range(course.lectures):
                 tasks.append({
@@ -292,6 +292,39 @@ class TimetableScheduler:
                             'is_group': True,
                             'group_name': f"{g_name}_{placeholder.course_id}"
                         })
+        
+        # --- SYNCHRONOUS PROJECT PHASES ---
+        # Group Project Phases so they schedule at the exact same time across all sections
+        phases = defaultdict(list)
+        for (course_id, section_id), teacher in self.teacher_assignments.items():
+            course = Course.objects.get(course_id=course_id)
+            if "Project Phase" in course.course_name:
+                section = Section.objects.get(class_id=section_id)
+                phases[course].append((section, teacher))
+                
+        for course, assignments in phases.items():
+            # Create a 1-slot group task for each practical slot (credits)
+            for _ in range(course.practicals):
+                sub_tasks = []
+                task_busy_teachers = set()
+                
+                for section, teacher in assignments:
+                    sub_tasks.append({
+                        'course': course, 'teacher': teacher, 'sections': [section], 'session_type': 'PRACTICAL'
+                    })
+                    task_busy_teachers.add(teacher)
+                    
+                if sub_tasks:
+                    tasks.append({
+                        'type': TYPE_PRACTICAL,
+                        'sub_tasks': sub_tasks,
+                        'busy_teachers': list(task_busy_teachers),
+                        'block_size': 1, # Phase sessions are always 1 slot each
+                        'priority': PRIORITY[TYPE_PRACTICAL],
+                        'is_group': True,
+                        'group_name': course.course_name
+                    })
+
         return tasks
 
     def _backtrack_place(self, tasks, index, ts_by_day):
@@ -307,14 +340,28 @@ class TimetableScheduler:
         # Heuristic: Prioritize days where the involved sections have no classes yet
         def score_day(d):
             score = 0
-            task_sections = task.get('sections', [])
-            if not task_sections and task.get('sub_tasks'):
-                # Extract sections from first subtask for grouping
-                task_sections = task['sub_tasks'][0].get('sections', [])
+            
+            # Extract all sections involved in this task
+            task_sections = set(task.get('sections', []))
+            if task.get('sub_tasks'):
+                for st in task['sub_tasks']:
+                    task_sections.update(st.get('sections', []))
             
             for sec in task_sections:
                 if self.section_day_counts.get((sec.class_id, d), 0) == 0:
                     score -= 100 # Strongly favor this day
+                    
+            # Also favor days where the teacher is empty
+            teachers = set()
+            if task.get('teacher'): teachers.add(task['teacher'])
+            if task.get('sub_tasks'):
+                for st in task['sub_tasks']:
+                    if st.get('teacher'): teachers.add(st['teacher'])
+            
+            for t in teachers:
+                if self.teacher_day_counts.get((t.teacher_id, d), 0) == 0:
+                    score -= 50 # Favor teacher daily coverage
+            
             return score
             
         days = sorted(DAYS, key=score_day)
@@ -379,6 +426,9 @@ class TimetableScheduler:
                 # Track day coverage
                 key = (sec.class_id, ts.day)
                 self.section_day_counts[key] = self.section_day_counts.get(key, 0) + 1
+            
+            t_key = (teacher.teacher_id, ts.day)
+            self.teacher_day_counts[t_key] = self.teacher_day_counts.get(t_key, 0) + 1
         return added
 
     def _remove_single(self, task, window, added):
@@ -391,6 +441,8 @@ class TimetableScheduler:
             # Untrack day coverage
             key = (sec.class_id, ts.day)
             self.section_day_counts[key] = self.section_day_counts.get(key, 0) - 1
+            t_key = (teacher.teacher_id, ts.day)
+            self.teacher_day_counts[t_key] = self.teacher_day_counts.get(t_key, 0) - 1
             
         for ts in window:
             self.faculty_busy[(teacher.teacher_id, ts.day, ts.slot_number)] = False
@@ -440,6 +492,9 @@ class TimetableScheduler:
             
         for t in task.get('busy_teachers', []):
             self.faculty_busy[(t.teacher_id, ts.day, ts.slot_number)] = True
+            # Track teacher day coverage for group members
+            t_key = (t.teacher_id, ts.day)
+            self.teacher_day_counts[t_key] = self.teacher_day_counts.get(t_key, 0) + 1
             
         return added
 
@@ -457,6 +512,9 @@ class TimetableScheduler:
             
         for t in task.get('busy_teachers', []):
             self.faculty_busy[(t.teacher_id, ts.day, ts.slot_number)] = False
+            # Untrack teacher day coverage for group members
+            t_key = (t.teacher_id, ts.day)
+            self.teacher_day_counts[t_key] = self.teacher_day_counts.get(t_key, 0) - 1
 
     def _check_hc9(self, teacher, window, max_hours=4):
         if hasattr(self, 'iterations') and self.iterations > 10000:

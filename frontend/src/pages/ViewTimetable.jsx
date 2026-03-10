@@ -382,7 +382,7 @@ function ViewTimetable() {
                         text += `\n(${c.section})`;
                     }
 
-                    if (c.is_lab_session) text += ' [LAB]';
+                    if (c.is_lab_session && !isProject) text += ' [LAB]';
                     if (isProject) text += ' [PROJECT]';
                     return text;
                 }).join('\n\n');
@@ -418,6 +418,31 @@ function ViewTimetable() {
                     }
                     // Clean up markers from display
                     data.cell.text = data.cell.text.map(t => t.replace(' [LAB]', '').replace(' [PROJECT]', ''));
+                }
+            },
+            didDrawCell: (data) => {
+                if (data.section === 'body' && data.column.index > 0 && data.cell.raw) {
+                    const rawText = data.cell.raw.toString();
+                    if (rawText.includes('[LAB]')) {
+                        // Draw LAB Badge in Top Right of the cell
+                        const slotX = data.cell.x;
+                        const slotY = data.cell.y;
+                        const slotWidth = data.cell.width;
+
+                        doc.setDrawColor(0, 123, 255);
+                        doc.setFillColor(0, 123, 255);
+                        doc.roundedRect(slotX + slotWidth - 12, slotY + 2, 10, 4, 1, 1, "FD");
+
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(5);
+                        doc.setFont("helvetica", "bold");
+                        doc.text("LAB", slotX + slotWidth - 7, slotY + 5.2, { align: 'center' });
+
+                        // Reset font back to normal for other text
+                        doc.setTextColor(0, 0, 0);
+                        doc.setFontSize(8);
+                        doc.setFont("helvetica", "normal");
+                    }
                 }
             }
         });
@@ -943,32 +968,57 @@ function ViewTimetable() {
                                             {/* Class blocks */}
                                             {(() => {
                                                 const items = timetable[day]?.[slot] || [];
-                                                const groupedItems = [];
-                                                const electiveGroupsSeen = new Set();
-                                                const groupCounts = {};
-                                                items.forEach(item => {
-                                                    if (item.is_elective && item.elective_group) {
-                                                        groupCounts[item.elective_group] = (groupCounts[item.elective_group] || 0) + 1;
-                                                    }
-                                                });
 
-                                                items.forEach(item => {
-                                                    if (item.is_elective && item.elective_group && groupCounts[item.elective_group] > 1) {
-                                                        if (!electiveGroupsSeen.has(item.elective_group)) {
-                                                            electiveGroupsSeen.add(item.elective_group);
-                                                            groupedItems.push({
-                                                                ...item,
-                                                                is_group_header: true,
-                                                                course_code: item.elective_group,
-                                                                course_name: item.elective_type ? `${item.elective_type} Electives` : 'Elective Group',
-                                                                teacher_name: 'Multiple Faculty',
-                                                                room: 'Various Rooms'
-                                                            });
+                                                // Grouping Logic for UI Display
+                                                const groupedItems = [];
+
+                                                // If we are filtering by a specific teacher, we should merge identical courses
+                                                // (e.g., Project Phase III spanning multiple sections) into a single card
+                                                const isTeacherView = Boolean(selectedTeacher || user?.role === 'FACULTY');
+
+                                                if (isTeacherView) {
+                                                    const courseMap = new Map();
+                                                    items.forEach(item => {
+                                                        const key = `${item.course_id}-${item.session_type}`;
+                                                        if (courseMap.has(key)) {
+                                                            const existing = courseMap.get(key);
+                                                            // merge sections
+                                                            if (!existing.section.includes(item.section)) {
+                                                                existing.section += `, ${item.section}`;
+                                                            }
+                                                        } else {
+                                                            courseMap.set(key, { ...item });
                                                         }
-                                                    } else {
-                                                        groupedItems.push(item);
-                                                    }
-                                                });
+                                                    });
+                                                    groupedItems.push(...Array.from(courseMap.values()));
+                                                } else {
+                                                    // Standard grouping for Section view (grouping electives)
+                                                    const electiveGroupsSeen = new Set();
+                                                    const groupCounts = {};
+                                                    items.forEach(item => {
+                                                        if (item.is_elective && item.elective_group) {
+                                                            groupCounts[item.elective_group] = (groupCounts[item.elective_group] || 0) + 1;
+                                                        }
+                                                    });
+
+                                                    items.forEach(item => {
+                                                        if (item.is_elective && item.elective_group && groupCounts[item.elective_group] > 1) {
+                                                            if (!electiveGroupsSeen.has(item.elective_group)) {
+                                                                electiveGroupsSeen.add(item.elective_group);
+                                                                groupedItems.push({
+                                                                    ...item,
+                                                                    is_group_header: true,
+                                                                    course_code: item.elective_group,
+                                                                    course_name: item.elective_type ? `${item.elective_type} Electives` : 'Elective Group',
+                                                                    teacher_name: 'Multiple Faculty',
+                                                                    room: 'Various Rooms'
+                                                                });
+                                                            }
+                                                        } else {
+                                                            groupedItems.push(item);
+                                                        }
+                                                    });
+                                                }
 
                                                 return groupedItems.map((classItem, idx) => {
                                                     const isDraggingThis = dragging?.entryId === classItem.entry_id;
@@ -991,7 +1041,8 @@ function ViewTimetable() {
                                                                 transition: 'opacity 0.2s ease, transform 0.2s ease',
                                                                 transform: isDraggingThis ? 'scale(0.95)' : undefined,
                                                                 padding: '10px',
-                                                                minHeight: classItem.is_lab_session ? '100%' : 'auto'
+                                                                minHeight: classItem.is_lab_session ? '100%' : 'auto',
+                                                                position: 'relative'
                                                             }}
                                                             title={
                                                                 isAdminOrHOD
@@ -1009,6 +1060,25 @@ function ViewTimetable() {
                                                                     userSelect: 'none',
                                                                 }}>
                                                                     ⠿
+                                                                </div>
+                                                            )}
+                                                            {/* LAB Badge */}
+                                                            {classItem.is_lab_session && !isProject && (
+                                                                <div style={{
+                                                                    position: 'absolute',
+                                                                    top: '8px',
+                                                                    right: '8px',
+                                                                    backgroundColor: '#007bff',
+                                                                    color: 'white',
+                                                                    fontSize: '0.55rem',
+                                                                    fontWeight: 800,
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '8px',
+                                                                    textTransform: 'uppercase',
+                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                                                    zIndex: 10
+                                                                }}>
+                                                                    LAB
                                                                 </div>
                                                             )}
                                                             <div className="class-content" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>

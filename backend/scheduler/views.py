@@ -347,18 +347,37 @@ def validate_schedule(request, schedule_id):
     entries = ScheduleEntry.objects.filter(schedule=schedule)
 
     # 1. Teacher double-booking
+    # Explicitly ignore conflicts where a teacher is overseeing multiple sections of the SAME course
+    # or DIFFERENT subjects within the EXACT SAME elective block synchronously (e.g., Project Phases, combined Electives).
     teacher_clashes = (
         entries.values('teacher', 'timeslot')
         .annotate(count=Count('id'))
         .filter(count__gt=1)
     )
     for c in teacher_clashes:
-        t = Teacher.objects.get(pk=c['teacher'])
-        ts = TimeSlot.objects.get(pk=c['timeslot'])
-        check_count = c['count']
-        conflicts.append(
-            f"Teacher '{t.teacher_name}' is assigned {check_count} classes at {ts.day} Slot {ts.slot_number}"
-        )
+        overlapping_entries = entries.filter(teacher=c['teacher'], timeslot=c['timeslot']).select_related('course')
+        course_ids = set()
+        elective_groups = set()
+        
+        for e in overlapping_entries:
+            course_ids.add(e.course.course_id)
+            if e.course.elective_group and e.course.elective_group != 'NA':
+                elective_groups.add(e.course.elective_group)
+                
+        is_conflict = True
+        if len(course_ids) == 1:
+            is_conflict = False
+        elif len(elective_groups) == 1 and len(course_ids) > 1:
+            if all(e.course.elective_group and e.course.elective_group != 'NA' for e in overlapping_entries):
+                is_conflict = False
+                
+        if is_conflict:
+            t = Teacher.objects.get(pk=c['teacher'])
+            ts = TimeSlot.objects.get(pk=c['timeslot'])
+            check_count = c['count']
+            conflicts.append(
+                f"Teacher '{t.teacher_name}' is assigned {check_count} distinct classes at {ts.day} Slot {ts.slot_number}"
+            )
 
     # 2. Room double-booking
     room_clashes = (
@@ -455,12 +474,19 @@ def validate_move(request):
     ).exclude(id=entry.id).select_related('teacher', 'room', 'section', 'course')
 
     for other in other_entries:
-        # Teacher double-booking
+        # Teacher double-booking (only a conflict if it's a DIFFERENT course/elective group)
         if other.teacher_id == entry.teacher_id:
-            conflicts.append(
-                f"Teacher '{entry.teacher.teacher_name}' already has a class at "
-                f"{target_day} Slot {target_slot} ({other.course.course_id})"
-            )
+            is_conflict = True
+            if other.course_id == entry.course_id:
+                is_conflict = False
+            elif getattr(other.course, 'elective_group', None) and other.course.elective_group != 'NA' and getattr(entry.course, 'elective_group', None) == other.course.elective_group:
+                is_conflict = False
+                
+            if is_conflict:
+                conflicts.append(
+                    f"Teacher '{entry.teacher.teacher_name}' already has a different class at "
+                    f"{target_day} Slot {target_slot} ({other.course.course_id})"
+                )
         # Room double-booking
         if other.room_id == entry.room_id:
             conflicts.append(
@@ -542,11 +568,19 @@ def move_entry(request):
             ).exclude(id=entry.id).select_related('teacher', 'room', 'section', 'course')
 
             for other in other_entries:
+                # Only flag teacher overlap if they are teaching a DIFFERENT course/elective group
                 if other.teacher_id == entry.teacher_id:
-                    conflict_list.append(
-                        f"Teacher '{entry.teacher.teacher_name}' already has a class at "
-                        f"{target_day} Slot {target_slot}"
-                    )
+                    is_conflict = True
+                    if other.course_id == entry.course_id:
+                        is_conflict = False
+                    elif getattr(other.course, 'elective_group', None) and other.course.elective_group != 'NA' and getattr(entry.course, 'elective_group', None) == other.course.elective_group:
+                        is_conflict = False
+                        
+                    if is_conflict:
+                        conflict_list.append(
+                            f"Teacher '{entry.teacher.teacher_name}' already has a different class at "
+                            f"{target_day} Slot {target_slot}"
+                        )
                 if other.room_id == entry.room_id:
                     conflict_list.append(
                         f"Room '{entry.room.room_id}' is already occupied at "
