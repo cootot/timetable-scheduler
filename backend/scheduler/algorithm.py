@@ -220,6 +220,14 @@ class TimetableScheduler:
                     'session_type': 'TUTORIAL'
                 })
 
+        # ==========================================
+        # DEVELOPER DOCS: PARALLEL ELECTIVE GROUPING
+        # ==========================================
+        # This section handles clustering parallel elective subjects (like PE1, PE2) 
+        # into unified "Group Tasks". By pushing them together:
+        # 1. We mathematically force the engine to check all involved teachers simultaneously.
+        # 2. We prevent the recursion engine from double-booking teachers across parallel classes.
+
         from collections import defaultdict
         electives = Course.objects.filter(is_elective=True, semester=self.schedule.semester, is_schedulable=True).exclude(elective_group__isnull=True)
         groups = defaultdict(list)
@@ -230,7 +238,7 @@ class TimetableScheduler:
             t_type = TYPE_FE if "FREE" in g_name.upper() else TYPE_PE
             s_type = 'FE' if t_type == TYPE_FE else 'PE'
             
-            # Master map for this group
+            # Master map: Fetch all teachers assigned to any subject in this elective group
             group_mappings = TeacherCourseMapping.objects.filter(course__in=courses).select_related('teacher', 'course', 'section')
             if not group_mappings: continue
 
@@ -238,13 +246,15 @@ class TimetableScheduler:
             target_sections = sorted([s for s in sections if s.year == year], key=lambda x: x.class_id)
             if not target_sections: continue
 
-            # Build unified session plan for this elective group based on its L, T, P
+            # Build a unified session plan (L, T, P) representing the shared blueprint 
+            # for all parallel classes in this group.
             base_course = courses[0]
             session_plan = []
             for _ in range(base_course.lectures): session_plan.append({'type': t_type, 'block_size': 1, 'session_type': s_type})
             for _ in range(base_course.theory): session_plan.append({'type': TYPE_TUTORIAL, 'block_size': 1, 'session_type': 'TUTORIAL'})
             if base_course.practicals > 0:
                 session_plan.append({'type': TYPE_PRACTICAL, 'block_size': base_course.practicals, 'session_type': 'PRACTICAL'})
+
 
             for session in session_plan:
                 sub_tasks = []
