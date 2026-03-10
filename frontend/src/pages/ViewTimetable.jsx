@@ -972,12 +972,13 @@ function ViewTimetable() {
                                                 // Grouping Logic for UI Display
                                                 const groupedItems = [];
 
-                                                // If we are looking at the Universal View (no filters) OR filtering by Teacher/Course/Room,
-                                                // we should merge identical courses into a single card showing all sections, teachers, and rooms.
-                                                // We ONLY use the old elective-grouping logic if viewing a specific single Section.
-                                                const isEntityOrUniversalView = !selectedSection;
+                                                // If we are filtering by a specific teacher OR course, we should merge identical courses
+                                                // into a single card showing all sections (and all teachers/rooms if they differ)
+                                                // We DO NOT merge the Universal View (no filters) per user request, we want a scrollable list.
+                                                const isTeacherView = Boolean(selectedTeacher || user?.role === 'FACULTY');
+                                                const isCourseView = Boolean(selectedCourse);
 
-                                                if (isEntityOrUniversalView) {
+                                                if (isTeacherView || isCourseView) {
                                                     const courseMap = new Map();
                                                     items.forEach(item => {
                                                         const key = `${item.course_id}-${item.session_type}`;
@@ -1051,7 +1052,8 @@ function ViewTimetable() {
                                                                 transform: isDraggingThis ? 'scale(0.95)' : undefined,
                                                                 padding: '10px',
                                                                 minHeight: classItem.is_lab_session ? '100%' : 'auto',
-                                                                position: 'relative'
+                                                                position: 'relative',
+                                                                flexShrink: 0
                                                             }}
                                                             title={
                                                                 isAdminOrHOD
