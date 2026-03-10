@@ -291,10 +291,24 @@ export default function FacultyMapping() {
                                                     <td>{c.course_name}</td>
                                                     <td>Year {c.year} · {c.semester?.toUpperCase()}</td>
                                                     <td>
-                                                        {c.is_lab ? <span className="lab-badge" style={{ fontSize: '0.65rem' }}>LAB</span> : null}
-                                                        {c.is_elective ? <ElectivePill group={c.elective_group} /> : (
-                                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Regular</span>
-                                                        )}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                            {c.is_lab && (
+                                                                <span style={{
+                                                                    backgroundColor: '#007bff',
+                                                                    color: '#fff',
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '0.65rem',
+                                                                    fontWeight: 800,
+                                                                    textTransform: 'uppercase'
+                                                                }}>
+                                                                    LAB
+                                                                </span>
+                                                            )}
+                                                            {c.is_elective ? <ElectivePill group={c.elective_group} /> : (
+                                                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Core Course</span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td style={{ fontSize: '0.8rem', color: style.text || 'var(--text-muted)' }}>
                                                         {c.elective_group || '—'}
