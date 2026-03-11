@@ -263,8 +263,10 @@ def restore_backup(request, filename):
         else:
             safety_name = f'db_pre_restore_{timestamp}.json'
             safety_path = os.path.join(safety_dir, safety_name)
+            # Use explicit UTF-8 encoding to avoid Windows default encoding issues
             with open(safety_path, 'w', encoding='utf-8') as f:
-                call_command('dumpdata', format='json', indent=2, stdout=f)
+                call_command('dumpdata', format='json', indent=2, stdout=f, 
+                             exclude=['auth.permission', 'contenttypes.contenttype'])
             
             if filename.endswith('.json'):
                 call_command('flush', '--noinput')

@@ -62,8 +62,10 @@ class Command(BaseCommand):
             backup_path = os.path.join(backup_dir, backup_filename)
             from django.core.management import call_command
             try:
+                # Use explicit UTF-8 encoding to avoid Windows default encoding issues
                 with open(backup_path, 'w', encoding='utf-8') as f:
-                    call_command('dumpdata', format='json', indent=2, stdout=f)
+                    call_command('dumpdata', format='json', indent=2, stdout=f,
+                                 exclude=['auth.permission', 'contenttypes.contenttype'])
                 file_size = os.path.getsize(backup_path)
                 self.stdout.write(
                     self.style.SUCCESS(
