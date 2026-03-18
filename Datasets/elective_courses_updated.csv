@@ -80,14 +80,14 @@ HUM23ENG231,Indian Thought through English,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
 HUM23ENG232,Insights into Life through English Literature,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
 HUM23ENG233,Technical Communication,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
 HUM23ENG234,Indian Short Stories in English,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
-HUM23FRE230,French Language (Lower),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23FRE231,French Language (Higher),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23GER230,German for Beginners I,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23GER231,German for Beginners II,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23GER232,German Language (Lower),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23GER233,German Language (Higher),4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23HIN230,Hindi I,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
-HUM23HIN231,Hindi II,4,even,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23FRE230,French Language (Lower),4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23FRE231,French Language (Higher),4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER230,German for Beginners I,4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER231,German for Beginners II,4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER232,German Language (Lower),4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23GER233,German Language (Higher),4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23HIN230,Hindi I,4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
+HUM23HIN231,Hindi II,4,odd,3,0,0,3,0,1,3,FREE_SEM7,0
 HUM23HUM230,Emotional Intelligence,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
 HUM23HUM239,Psychology for Effective Living,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
 HUM23HUM244,Science of Food and Nutrition,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
@@ -141,26 +141,26 @@ HUM23CSE324,Information Systems,2,even,3,0,0,3,0,1,3,FREE_SEM4,0
 23CSE353,Data Visualization,3,even,2,0,2,3,1,1,4,PE_SEM6,0
 23CSE354,DBMS for Data Science,3,even,2,0,2,3,1,1,4,PE_SEM6,0
 23CSE355,Mining of Massive Datasets,3,even,3,0,0,3,0,1,3,PE_SEM6,0
-23CSE356,Social Network Analytics,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE357,Time Series Analysis and Forecasting,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE361,Real Time OS for Cyber Physical Systems,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE362,Edge Computing,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE363,Cloud Computing,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE364,Cyber Physical Systems,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE365,Internet of Things,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE371,Digital Image Processing,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE372,Computer Graphics and Animation,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE373,Computer Vision,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE374,Video Analysis,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE375,Augmented and Virtual Reality,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE470,Semantic Web,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE471,Natural Language Processing,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE472,Artificial Intelligence and Robotics,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE473,Neural Networks and Deep Learning,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE474,Computational Intelligence,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE475,Generative AI,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE476,Conversational AI,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE477,Reinforcement Learning,4,even,2,0,2,3,1,1,4,PE_SEM7,0
-23CSE478,Drones and Robotics,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE479,Machine Learning with Graphs,4,even,3,0,0,3,0,1,3,PE_SEM7,0
-23CSE480,AI for Industrial Decision Making,4,even,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE356,Social Network Analytics,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE357,Time Series Analysis and Forecasting,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE361,Real Time OS for Cyber Physical Systems,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE362,Edge Computing,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE363,Cloud Computing,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE364,Cyber Physical Systems,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE365,Internet of Things,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE371,Digital Image Processing,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE372,Computer Graphics and Animation,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE373,Computer Vision,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE374,Video Analysis,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE375,Augmented and Virtual Reality,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE470,Semantic Web,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE471,Natural Language Processing,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE472,Artificial Intelligence and Robotics,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE473,Neural Networks and Deep Learning,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE474,Computational Intelligence,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE475,Generative AI,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE476,Conversational AI,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE477,Reinforcement Learning,4,odd,2,0,2,3,1,1,4,PE_SEM7,0
+23CSE478,Drones and Robotics,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE479,Machine Learning with Graphs,4,odd,3,0,0,3,0,1,3,PE_SEM7,0
+23CSE480,AI for Industrial Decision Making,4,odd,3,0,0,3,0,1,3,PE_SEM7,0

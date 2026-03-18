@@ -308,8 +308,8 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
     elective_type = serializers.CharField(source="course.elective_type", read_only=True, allow_null=True)
     elective_group = serializers.CharField(source="course.elective_group", read_only=True, allow_null=True)
     teacher_name = serializers.CharField(source="teacher.teacher_name", read_only=True)
-    room_name = serializers.CharField(source="room.room_id", read_only=True)
-    room_type = serializers.CharField(source="room.room_type", read_only=True)
+    room_name = serializers.SerializerMethodField()
+    room_type = serializers.SerializerMethodField()
     day = serializers.CharField(source="timeslot.day", read_only=True)
     slot_number = serializers.IntegerField(
         source="timeslot.slot_number", read_only=True
@@ -344,6 +344,11 @@ class ScheduleEntrySerializer(serializers.ModelSerializer):
             "is_lab_session",
             "constraint_reason",
         ]
+    def get_room_name(self, obj):
+        return obj.room.room_id if obj.room else "TBA"
+
+    def get_room_type(self, obj):
+        return obj.room.room_type if obj.room else "N/A"
 
 
 class ConstraintSerializer(serializers.ModelSerializer):

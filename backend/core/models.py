@@ -501,7 +501,7 @@ class ScheduleEntry(models.Model):
     # Who is teaching it
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     # Where it is taking place
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, null=True, blank=True)
     # When it is taking place
     timeslot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     
